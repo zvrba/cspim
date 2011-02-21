@@ -1,0 +1,38 @@
+Some of these test programs are solved assignments (in C) from Appendix of the
+third edition of Hennessy & Patterson, Computer Organization and Design: The
+Hardware/Software Interface; available at:
+
+http://pages.cs.wisc.edu/~larus/HP_AppA.pdf
+
+These programs should be executed with the hostapps/run program.
+
+===
+
+The MASTER sources for the MIPS torture test are *.sm4 files.  To generate a
+compileable assembly source from them, use:
+
+m4 cputorture.sm4 > cputorture.s
+
+The pregenerated source is already provided in the distribution.
+
+The test is executed with the hostapps/torture program.  If the test is
+successfully passed, the output will be something like (note the '(near
+SUCCESS)' in the last line):
+
+finished: exception=5, code=0x0, last_branch=0x2e74(near t_link)
+***MIPS@0xb7c6b008***
+BASE=200000@0xb7c6b008 BRK=00003fd0 STKSZ=00004000
+R00=00000000 R01=00000000 R02=00000000 R03=0000000c
+R04=00000001 R05=00005678 R06=00005678 R07=00001234
+R08=00001234 R09=0000e7f8 R10=0000e7f8 R11=0000c5d6
+R12=0000c5d6 R13=12345678 R14=12345678 R15=c5d6e7f8
+R16=c5d6e7f8 R17=56787800 R18=56787800 R19=12345678
+R20=12345678 R21=00001234 R22=ffffe7f8 R23=00000000
+R24=90000000 R25=f0000000 R26=00003fc0 R27=00003fc4
+R28=00003fc0 R29=00003fc4 R30=00003fc8 R31=00002fa0
+HI =12345678 LO =9abcdef0
+PC =00002fb0 DS =00000000
+(near SUCCESS)
+
+If the execution stops at a label name other than 'SUCCESS' in the last line,
+something has gone wrong.

@@ -1,0 +1,190 @@
+#  ===========================================================================
+#  COPYRIGHT (c) 2008 Zeljko Vrba <zvrba.external@zvrba.net>
+# 
+#  Permission is hereby granted, free of charge, to any person obtaining a
+#  copy of this software and associated documentation files (the "Software"),
+#  to deal in the Software without restriction, including without limitation
+#  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#  and/or sell copies of the Software, and to permit persons to whom the
+#  Software is furnished to do so, subject to the following conditions:
+# 
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
+# 
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+#  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#  DEALINGS IN THE SOFTWARE.
+#  ===========================================================================
+#
+# Included as part of cputorture.sm4.  Tests load/store instructions for
+# little-endian mode.
+#
+
+t_lui:
+.globl t_lui
+		li		R(2), 1			# Test that lui zeroes low-order bits
+		lui		R(2), 0
+		bne		R(2), R(0), B2
+
+		# Constants for further tests.
+
+		lui		R(23), 0
+		la		R(28), w1
+		la		R(29), w2
+		la		R(30), w3
+		la		R(31), w4
+
+		# Just test that it's possible to modify $26, $27
+
+		la		R(26), w1
+		bne		R(26), R(28), B2
+		la		R(27), w2
+		bne		R(27), R(29), B2
+
+#
+# Test load instructions.
+# Arguments: (1:insn, 2:r1, 3:r2, 4:address, 5:expected)
+# Temporary registers: $24, $25
+#
+define(`t_ld',dnl
+`
+t_ld_$1_`'UID`':
+		$1		$2, $4				# load from memory
+		li		$3, $5				# load expected as immediate
+		bne		$2, $3, B2			# branch if not equal
+		$1		R(0), $4			# try to change R(0)
+		bne		R(0), R(23), B1		# branch if R(0) or R(23) changed
+		nop							# branch slot
+')
+
+#
+# Test that unaligned loads raise exception.
+# Arguments: (1:insn, 2:reg, 3:address, 4:label)
+#
+define(`t_unl',dnl
+`
+t_unl_$1_`'UID`':
+		.globl	$4
+$4:		$1		$2, $3				# label to mark exception
+		break	3					# if not skipped by exn handler
+')
+
+#
+# Test that unaligned stores raise exception.
+# Arguments: (1:insn, 2:address, 3:label)
+#
+define(`t_uns',dnl
+`
+t_uns_$1_`'UID`':
+		.globl	$3
+$3:		$1		R(0), $2			# label to mark exception
+		break	3					# if not skipped by exn handler
+')
+
+		t_ld(lb,  $2,  $3,  0($28), 0x00000078)
+		t_ld(lb,  $4,  $5,  1($28), 0x00000056)
+		t_ld(lb,  $6,  $7,  2($28), 0x00000034)
+		t_ld(lb,  $8,  $9,  3($28), 0x00000012)
+		t_ld(lb,  $10, $11, 0($29), 0xFFFFFFF8)
+		t_ld(lb,  $12, $13, 1($29), 0xFFFFFFE7)
+		t_ld(lb,  $14, $15, 2($29), 0xFFFFFFD6)
+		t_ld(lb,  $16, $17, 3($29), 0xFFFFFFC5)
+
+		t_ld(lbu, $2,  $3,  0($28), 0x00000078)
+		t_ld(lbu, $4,  $5,  1($28), 0x00000056)
+		t_ld(lbu, $6,  $7,  2($28), 0x00000034)
+		t_ld(lbu, $8,  $9,  3($28), 0x00000012)
+		t_ld(lbu, $10, $11, 0($29), 0x000000F8)
+		t_ld(lbu, $12, $13, 1($29), 0x000000E7)
+		t_ld(lbu, $14, $15, 2($29), 0x000000D6)
+		t_ld(lbu, $16, $17, 3($29), 0x000000C5)
+
+		t_ld(lh,  $18, $19, 0($28), 0x00005678)
+		t_ld(lh,  $20, $21, 2($28), 0x00001234)
+		t_ld(lh,  $22, $2,  0($29), 0xFFFFE7F8)
+		t_ld(lh,  $3,  $4,  2($29), 0xFFFFC5D6)
+
+		t_ld(lhu, $5,  $6,  0($28), 0x00005678)
+		t_ld(lhu, $7,  $8,  2($28), 0x00001234)
+		t_ld(lhu, $9,  $10, 0($29), 0x0000E7F8)
+		t_ld(lhu, $11, $12, 2($29), 0x0000C5D6)
+
+		t_ld(lw,  $13, $14, 0($28), 0x12345678)
+		t_ld(lw,  $15, $16, 0($29), 0xC5D6E7F8)
+
+		# Exercise store instructions to recheck with loads
+	
+t_store:
+.globl t_store
+		li		$2, 0x12345678
+		sb		$2, 1($30)
+		sh		$2, 2($30)
+		sw		$2, 0($31)
+		t_ld(lw, $17, $18, 0($30), 0x56787800)
+		t_ld(lw, $19, $20, 0($31), 0x12345678)
+
+		# Check for exceptions on unaligned loads/stores as well as on
+		# accesses to addresses below MIPS_LOWBASE (0x1000).  Also check that
+		# failed loads and stores do not change the target.
+
+t_ldst_exn:
+.globl t_ldst_exn
+		li		$2, 0x12345678
+		move	$3, $2
+		move	$4, $0
+		t_unl(lh,  $2, 1($30), EXN10)
+		t_unl(lhu, $2, 1($30), EXN11)
+		t_unl(lw,  $2, 1($30), EXN12)
+		t_unl(lw,  $2, 2($30), EXN13)
+		t_unl(lw,  $2, 3($30), EXN14)
+		t_unl(lw,  $2, 0($4),  EXN15)		# null ptr check
+		t_unl(lw,  $2, 0xFFC($4), EXN16)	# null ptr check
+		bne		$2, $3, B2
+
+		t_uns(sh,  1($30), EXN17)
+		t_uns(sw,  1($30), EXN18)
+		t_uns(sw,  2($30), EXN19)
+		t_uns(sw,  3($30), EXN20)
+
+		t_ld(lw, $2, $3, 0($30), 0x56787800)
+
+		t_uns(sw, 0($4), EXN21)				# null ptr check
+		t_uns(sw, 0xFFC($4), EXN22)			# null ptr check
+
+		# Test lwl/lwr/swl/swr.  TODO: should test all mod 4 combinations!
+
+t_unaligned:
+.globl t_unaligned
+		lw		$2, 0($28)
+		lwl		$2, 2($29)
+		li		$3, 0xD6E7F878
+		bne		$2, $3, B2
+		lwr		$2, 3($28)
+		li		$3, 0xD6E7F812
+		bne		$2, $3, B2
+		nop
+
+		li		$2, 0x12345678
+		sw		$0, 0($30)
+		sw		$0, 0($31)
+		swl		$2, 1($31)
+		li		$3, 0x00001234
+		lw		$4, 0($31)
+		bne		$3, $4, B2
+		swr		$2, 2($30)
+		li		$3, 0x56780000
+		lw		$4, 0($30)
+		bne		$3, $4, B2
+		nop
+
+		.data	# Data used by load/store tests
+		.align	4
+w1:		.byte	0x78, 0x56, 0x34, 0x12
+w2:		.byte	0xF8, 0xE7, 0xD6, 0xC5
+w3:		.byte	0x00, 0x00, 0x00, 0x00
+w4:		.byte	0x00, 0x00, 0x00, 0x00
+		.text	# Switch back to .text segment

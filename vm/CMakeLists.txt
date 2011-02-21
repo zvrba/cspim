@@ -1,0 +1,17 @@
+project(VM)
+set(SOURCES cpuemu.c opcodes.c elfload.c)
+
+if(HOSTED)
+	include_directories(hosted)
+	set(SOURCES ${SOURCES} hosted/syscalls.c)
+else(HOSTED)
+	include_directories(cspim)
+	set(CMAKE_SYSTEM_NAME "Generic")
+	set(CMAKE_C_COMPILER mipsel-elf-gcc)
+	add_definitions(-Wall -O3 -mips1 -mno-check-zero-division -mlong-calls)
+	set(CMAKE_EXE_LINKER_FLAGS "-Wl,-q -nostdlib -Ttext 0x1000")
+	set(SOURCES ${SOURCES} cspim/jmp.S cspim/syscalls.c)
+	set_property(SOURCE cspim/jmp.S PROPERTY LANGUAGE C)
+endif(HOSTED)
+
+add_library(mipsvm STATIC ${SOURCES})

@@ -1,0 +1,92 @@
+==
+The CSPIM MIPS simulator
+==
+More details about this project can be found at
+http://zvrba.net/software/cspim.html
+
+Detailed description of CSPIM internals as well as the motivation and possible
+use cases can be found in the following publication:
+
+Vrba, Z.; Halvorsen, P.; Griwodz, C., "Program obfuscation by strong
+cryptography" The International Dependability Conference, 2010. ARES
+'10. International Conference on, 15-18 February, 2010.
+DOI:10.1109/ARES.2010.47 [http://dx.doi.org/10.1109/ARES.2010.47]
+
+Copies are available on explicit request by email.
+
+==
+COPYRIGHT NOTICE
+==
+
+All files in this distribution, unless otherwise explicitly noted, are
+
+  (c) 2008-2009 Zeljko Vrba <zvrba.external@zvrba.net>
+
+and are distributed under the following license:
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to
+  deal in the Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+  sell copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+  IN THE SOFTWARE.
+
+==
+
+==
+PROJECT STRUCTURE
+==
+
+  bmips/        - precompiled programs for MIPS I; directly runnable by CSPIM
+  hostapps/     - host utilities
+  mipsapps/     - source fof programs runnable by CSPIM; precompiled in bmips/
+  vm/           - core simulator: MIPS instruction set and ELF loader
+  
+
+==
+HOW TO BUILD
+==
+
+Prerequisites:
+--------------
+- Working native compiler (e.g. gcc)
+- Working cross-compiler which can generate little-endian MIPS I executables
+- CMake (http://www.cmake.org)
+
+This package has been developed and tested with both Sun's cc, gcc and Visual
+Studio 2008 (project files for native tools are in the vc directory).  The
+cross-compiler used was gcc configured for the mipsel-elf target;
+gcc -v reports:
+
+Target: mipsel-elf
+Configured with: ../configure --prefix=/home/zvrba/COMPILE --disable-nls --target=mipsel-elf --disable-bootstrap --disable-libssp
+Thread model: single
+gcc version 4.2.3
+
+1. To build the native tools (interpreter) on UNIX:
+   ccmake . && make
+2. To verify that the interpreter works correctly, follow the instructions in
+   torture/README file.
+3. To try out simple interactive demos, follow the instructions in
+   demos/README file.
+
+
+Self-simulation
+---------------
+Compile both HOSTED and non-HOSTED build.  This must be done in two separate
+build directories.  Then, an extra executable is built, mipsapps/run-lvl1,
+which should be run with hostapps/load-lvl1 (from the HOSTED build).  run-lvl1
+can currently only run cputorture, since level2 simulation does not yet
+forward system calls to level1 simulation.
+

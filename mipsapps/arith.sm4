@@ -1,0 +1,199 @@
+#  ===========================================================================
+#  COPYRIGHT (c) 2008 Zeljko Vrba <zvrba.external@zvrba.net>
+# 
+#  Permission is hereby granted, free of charge, to any person obtaining a
+#  copy of this software and associated documentation files (the "Software"),
+#  to deal in the Software without restriction, including without limitation
+#  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#  and/or sell copies of the Software, and to permit persons to whom the
+#  Software is furnished to do so, subject to the following conditions:
+# 
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
+# 
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+#  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#  DEALINGS IN THE SOFTWARE.
+#  ===========================================================================
+#
+# Included as part of cputorture.sm4.  Tests arithmetic.
+#
+# Registers are cyclically used to test everything thoroughly.  $23-$25 should
+# not be used by tests as macros already use them, $26-$27 should be avoided
+# for compatibility with other simulators.
+#
+
+#
+# Code to test {mult,div}{,u}.  The assembler macro-expands mul/div
+# instructions, where it inserts extra checks (e.g. overflows).  We do NOT
+# want that, and there is no way to disable this expansion in assembler, so
+# the instruction is hard-coded as literal word.  Operands (op1, op2) are
+# loaded into registers $2, $3 and this should be taken into account in
+# instruction encoding too.
+#
+# Arguments: (1:insn, 2:op1, 3:op2, 4:result_hi, 5:result_lo)
+# Temporary regs: $23-$25
+#
+define(`t_muldiv',dnl
+`
+t_muldiv_`'UID`':
+		li		R(2), $2		# 1st source operand
+		li		R(3), $3		# 2nd source operand
+		move	R(24), R(2)		# back up src1
+		move	R(25), R(3)		# back up src2
+		$1						# pseudo-op to emit proper instruction
+		bne		R(2), R(24), B2	# taken if src1 modified
+		li		R(24), $4		# load result hi
+		bne		R(3), R(25), B2	# taken if src2 modified
+		li		R(25), $5		# load result lo
+		mfhi	R(23)			# get result hi; branch if not correct
+		bne		R(23), R(24),  B2
+		mflo	R(23)			# get result lo; branch if not correct
+		bne		R(23), R(25), B2
+		nop						# branch slot
+')
+
+#
+# Code to test arithmetic overflows; immediate variant.  There is no expected
+# result, as overflow is expected.
+# Arguments: (1:insn, 2:src, 3:srcop, 4:imm, 5:label)
+# Temporary regs: $23
+#
+define(`t_ovfi',dnl
+`
+t_ovfi_$1_`'UID`':
+		.globl	$5
+		li		$2, $3			# source operand
+$5:		$1		R(23), $2, $4	# label used to mark expected exception
+		break	3				# if not skipped by exn handler
+')
+
+#
+# Code to test arithmetic overflows; 3-operand variant.  There is no expected
+# result, as overflow is expected.
+# Arguments: (1:insn, 2:src1, 3:src2, 4:srcop1, 5:srcop2, 6:label)
+# Temporary regs: $23
+#
+define(`t_ovf3',dnl
+`
+t_ovf3_$1_`'UID`':
+		.globl	$6
+		li		$2, $4			# 1st source operand
+		li		$3, $5			# 2nd source operand
+$6:		$1		R(23), $2, $3	# label used to mark expected exception
+		break	3				# if not skipped by exn handler
+')
+
+		.text
+
+		# 4 sign combinations for each of {add,sub,mult,div}{,u}.
+
+		# Instructions with sign-extended immediate operands.
+
+		t_alui(addi, $2, $3, 0x12345678, 0x4001, 0x12349679)
+		t_alui(addi, $4, $5, 0x12345678, 0xFFFF, 0x12345677)
+		t_alui(addi, $6, $7, 0xFFFFFFF0, 0x0001, 0xFFFFFFF1)
+		t_alui(addi, $8, $9, 0xFFFFFFF1, 0xFFFF, 0xFFFFFFF0)
+
+		t_alui(addiu, $10, $11, 0x12345678, 0x4001, 0x12349679)
+		t_alui(addiu, $12, $13, 0x12345678, 0xFFFF, 0x12345677)
+		t_alui(addiu, $14, $15, 0xFFFFFFF0, 0x0001, 0xFFFFFFF1)
+		t_alui(addiu, $16, $17, 0xFFFFFFF1, 0xFFFF, 0xFFFFFFF0)
+
+		# 3-register arithmetic instructions.
+
+		t_alu3(add, $6, $7, $8, 0x12345678, 0x600A9001, 0x723EE679)
+		t_alu3(add, $6, $7, $8, 0x12345678, 0xFFFFFFFE, 0x12345676)
+		t_alu3(add, $6, $7, $8, 0xFFFFFFF0, 0x00000001, 0xFFFFFFF1)
+		t_alu3(add, $6, $7, $8, 0xFFFFFFF1, 0xFFFFFFFF, 0xFFFFFFF0)
+
+		t_alu3(addu, $6, $7, $8, 0x12345678, 0x600A9001, 0x723EE679)
+		t_alu3(addu, $6, $7, $8, 0x12345678, 0xFFFFFFFE, 0x12345676)
+		t_alu3(addu, $6, $7, $8, 0xFFFFFFF0, 0x00000001, 0xFFFFFFF1)
+		t_alu3(addu, $6, $7, $8, 0xFFFFFFF1, 0xFFFFFFFF, 0xFFFFFFF0)
+
+		t_alu3(sub, $6, $7, $8, 0x723EE679, 0x600A9001, 0x12345678)
+		t_alu3(sub, $6, $7, $8, 0x12345676, 0xFFFFFFFE, 0x12345678)
+		t_alu3(sub, $6, $7, $8, 0xFFFFFFF1, 0x00000001, 0xFFFFFFF0)
+		t_alu3(sub, $6, $7, $8, 0xFFFFFFF0, 0xFFFFFFFF, 0xFFFFFFF1)
+
+		t_alu3(subu, $6, $7, $8, 0x723EE679, 0x600A9001, 0x12345678)
+		t_alu3(subu, $6, $7, $8, 0x12345676, 0xFFFFFFFE, 0x12345678)
+		t_alu3(subu, $6, $7, $8, 0xFFFFFFF1, 0x00000001, 0xFFFFFFF0)
+		t_alu3(subu, $6, $7, $8, 0xFFFFFFF0, 0xFFFFFFFF, 0xFFFFFFF1)
+
+		# Multiplication and division.  Due to assembler's expansion of these
+		# instructions, we hard-code the instruction with $2,$3 as operands.
+
+		# mult
+		t_muldiv(.word 0x00430018, 0x12345678, 0x600A9001, 0x06D460B5, 0xE387D678)
+		t_muldiv(.word 0x00430018, 0x12345678, 0xFFFFFFFE, 0xFFFFFFFF, 0xDB975310)
+		t_muldiv(.word 0x00430018, 0x823EE679, 0x600A9001, 0xD0D26625, 0x449CF679)
+		t_muldiv(.word 0x00430018, 0x823EE679, 0x80000001, 0x3EE08CC3, 0x023EE679)
+
+		# multu
+		t_muldiv(.word 0x00430019, 0x12345678, 0x600A9001, 0x06D460B5, 0xE387D678)
+		t_muldiv(.word 0x00430019, 0x12345678, 0xFFFFFFFE, 0x12345677, 0xDB975310)
+		t_muldiv(.word 0x00430019, 0x823EE679, 0x600A9001, 0x30DCF626, 0x449CF679)
+		t_muldiv(.word 0x00430019, 0x823EE679, 0x80000001, 0x411F733D, 0x023EE679)
+
+		# div. expected result is remainder,quotient
+		t_muldiv(.word 0x0043001A, 0x600A9001, 0x02000021, 0x000A89D1, 0x00000030)
+		t_muldiv(.word 0x0043001A, 0x600A9001, 0xFFFFFFE3, 0x00000001, 0xFCB03000)
+		t_muldiv(.word 0x0043001A, 0x823EE679, 0x200A9001, 0xE25E967C ,0xFFFFFFFD)
+		t_muldiv(.word 0x0043001A, 0x823EE679, 0xFFFFFFF7, 0xFFFFFFFF, 0x0DF902D6)
+
+		# divu. expected result is remainder,quotient		
+		t_muldiv(.word 0x0043001B, 0x600A9001, 0x02000021, 0x000A89D1, 0x00000030)
+		t_muldiv(.word 0x0043001B, 0x600A9001, 0xFFFFFFE3, 0x600A9001, 0x00000000)
+		t_muldiv(.word 0x0043001B, 0x823EE679, 0x200A9001, 0x0214A675, 0x00000004)
+		t_muldiv(.word 0x0043001B, 0x823EE679, 0xFFFFFFF7, 0x823EE679, 0x00000000)
+
+		# Test that add/sub (do not) trigger overflow in right circumstances
+		# and that unsigned variants give correct results.  Note that sub
+		# with immediate argument does not exist.
+
+		t_alui(addi,  $2, $3, 0x7FFFFFFE, 0x0001, 0x7FFFFFFF)
+		t_ovfi(addi,  $6,     0x7FFFFFFF, 0x0001, EXN01)
+		t_alui(addiu, $6, $7, 0x7FFFFFFF, 0x0001, 0x80000000)
+		t_alui(addi,  $4, $5, 0x80000000, 0x0001, 0x80000001)
+		t_ovfi(addi,  $7,     0x80000000, 0xFFFF, EXN02)
+		t_alui(addiu, $8, $9, 0x80000000, 0xFFFF, 0x7FFFFFFF)
+
+		t_alu3(add,  $10, $11, $12, 0x7FFFFFFE, 0x00000001, 0x7FFFFFFF)
+		t_ovf3(add,  $13, $14,      0x7FFFFFFF, 0x00000001, EXN05)
+		t_alu3(addu, $13, $14, $15, 0x7FFFFFFF, 0x00000001, 0x80000000)
+		t_alu3(add,  $16, $17, $18, 0x80000000, 0x00000001, 0x80000001)
+		t_ovf3(add,  $19, $20,      0x80000000, 0xFFFFFFFF, EXN06)
+		t_alu3(addu, $22, $28, $29, 0x80000000, 0xFFFFFFFF, 0x7FFFFFFF)
+
+		t_alu3(sub,  $30, $31, $2,  0x7FFFFFFE, 0xFFFFFFFF, 0x7FFFFFFF)
+		t_ovf3(sub,  $3,  $4,       0x7FFFFFFF, 0xFFFFFFFF, EXN07)
+		t_alu3(subu, $6,  $7,  $8,  0x7FFFFFFF, 0xFFFFFFFF, 0x80000000)
+		t_alu3(sub,  $9,  $10, $11, 0xFFFFFFFF, 0x00000001, 0xFFFFFFFE)
+		t_ovf3(sub,  $12, $13,      0x80000000, 0x00000001, EXN08)
+		t_alu3(subu, $15, $16, $17, 0x80000000, 0x00000001, 0x7FFFFFFF)
+
+		# Explicit m{t,f}{hi,lo} tests.
+
+t_hilo:
+.globl	t_hilo
+		xor		$18, $18, $18
+		li		$30, 0x12345678
+		mthi	$30
+		li		$31, 0x9ABCDEF0
+		mtlo	$31
+		mfhi	$0					# check for $0 modif
+		bne		$0, $18, B1
+		mfhi	$2
+		bne		$2, $30, B2			# branch if read hi != stored
+		mflo	$0					# check for $0 modif
+		bne		$0, $18, B1
+		mflo	$2					# delay slot
+		bne		$2, $31, B2			# branch if read lo != stored
+		nop							# delay slot
+

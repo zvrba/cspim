@@ -1,0 +1,137 @@
+#  ===========================================================================
+#  COPYRIGHT (c) 2008 Zeljko Vrba <zvrba.external@zvrba.net>
+# 
+#  Permission is hereby granted, free of charge, to any person obtaining a
+#  copy of this software and associated documentation files (the "Software"),
+#  to deal in the Software without restriction, including without limitation
+#  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#  and/or sell copies of the Software, and to permit persons to whom the
+#  Software is furnished to do so, subject to the following conditions:
+# 
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
+# 
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+#  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#  DEALINGS IN THE SOFTWARE.
+#  ===========================================================================
+#
+# Torture test for every individual instruction.  Some instructions are
+# expected to generate an exception, and such instructions are marked by
+# a label of the form EXNxxxx (where xxxx is a number).  Such instructions
+# (and the one following it) are silently skipped over by the controlling
+# program.  If the instruction does NOT cause an exception, a BREAK happens.
+# Test failures are reported through BREAKs with non-0 code.  Successful
+# completion of all tests ends by BREAK with code 0.
+#
+# Break codes:
+# 0 = everything OK
+# 1 = $0 has been modified
+# 2 = result was not as expected
+# 3 = arithmetic/memory exception expected, but not taken
+#
+# This source file is to be preprocessed by M4 to generate the source which
+# can be fed into assembler.
+#
+# Additional operations recognized by assembler:
+# li   = load 32-bit immediate
+# la   = load address
+# nop  = no operation
+# move = move between registers
+#
+# How to build and run:
+#
+# m4 cputorture.sm4 > cputorture.s
+# mipsel-elf-gcc cputorture.s -nostdlib -Ttext 0x1000 -o cputorture
+# ./dist/Debug/Sun-Generic/mipstorture cputorture 
+#
+# If everything goes OK, the execution should end with exception 5, code 0
+# and PC near the label SUCCESS.
+#
+
+#
+# Macros used from different sources.
+#
+
+#
+# Expand R(N) to $N, e.g. R(1) -> $1
+#
+define(`R', `$`'$1')dnl
+
+#
+# Generate unique ID.
+#
+define(`UID__', 0)
+define(`UID', `define(`UID__', incr(UID__))UID__')
+
+#
+# Code to test ALU operations with immediate operand (including shifts by
+# constant amount).
+# Arguments: (1:insn, 2:dst, 3:src, 4:srcop, 5:imm, 6:result) 
+# Temporary regs: $23, $24
+#
+define(`t_alui',dnl
+`
+t_alui_$1_`'UID`':
+		li		$3, $4			# 1st source operand
+		li		R(23), $6		# expected result
+		move	R(24), $3		# back up src
+		li		$2, 0			# dst := 0
+		$1		R(0), $3, $5	# try to change r0
+		bne		R(0), $2, B1	# taken if r0 or $2 modified
+		$1		$2, $3, $5		# dst := src ($1) imm
+		bne		$2, R(23), B2	# taken if incorrect result
+		nop						# branch slot
+		bne		$3, R(24), B2	# source or backup reg spuriously modified
+		nop						# branch slot
+')
+
+#
+# Code to test 3-operand ALU operations.
+# Arguments: (1:insn, 2:dst, 3:src1, 4:src2, 5:op1, 6:op2, 7:result)
+# Temporary regs: $23, $24, $25
+#
+define(`t_alu3',dnl
+`
+t_alu3_$1_`'UID`':
+		li		$3, $5			# 1st source operand
+		li		$4, $6			# 2nd source operand
+		li		R(23), $7		# expected result
+		move	R(24), $3		# back up src1
+		move	R(25), $4		# back up src2
+		li		$2, 0			# dst := 0
+		$1		R(0), $3, $4	# try to change r0
+		bne		R(0), $2, B1	# taken if r0 or $2 modified
+		$1		$2, $3, $4		# dst := src1 ($1) src2
+		bne		$2, R(23), B2	# taken if incorrect result
+		nop						# branch slot
+		bne		$3, R(24), B2	# src1 modified
+		nop						# branch slot
+		bne		$4, R(25), B2	# operand2 modified
+		nop						# branch slot
+')
+
+		.text
+		.set	noreorder
+		.set	nobopt
+
+		.globl _start
+_start:
+include(arith.sm4)			# arithmetic operations + m{f,t}{hi,lo}
+include(logic.sm4)			# bit operations and comparisons
+include(loadstore.sm4)		# load/store tests
+include(branch.sm4)			# branch tests
+		.globl	SUCCESS
+SUCCESS:
+		break 0				# mark successful completion
+
+		# Failure labels
+		.globl	FAILURE
+FAILURE:
+B1:		break	1
+B2:		break	2
+B3:		break	3
