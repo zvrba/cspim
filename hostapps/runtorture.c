@@ -38,7 +38,7 @@
 #include "cpu.h"
 #include "util.h"
 
-#define MEMSZ (2U << 20)
+#define MEMSZ (2U << 24)
 #define STKSZ (16U << 10)
 
 static void execute(struct mips_cpu*);

@@ -40,7 +40,7 @@
 #include "rc5-16.h"
 #include "util.h"
 
-#define MEMSZ (2U << 20)
+#define MEMSZ (2U << 24)
 #define STKSZ (16U << 10)
 
 int main(int argc, char **argv)
