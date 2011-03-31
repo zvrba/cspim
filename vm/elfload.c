@@ -58,6 +58,7 @@
 #include "types.h"
 #include "cpu.h"
 #include "elf.h"
+#include <stdio.h>
 
 static int check_eh_limits(const Elf32_Ehdr*, size_t);
 static int load_segments(struct mips_cpu*);
@@ -81,32 +82,46 @@ int mips_elf_load(struct mips_cpu *pcpu, const char *elf, size_t elfsz)
 	/* Check ELF format and load segments to their proper places.  Don't allow
 	 * segment data to overflow into area reserved for stack. */
 	
-	if(check_eh_limits(eh, elfsz))
+	if(check_eh_limits(eh, elfsz)) {
+		fprintf(stderr, "ELF header is off limits!\n");
 		return -1;
-	if(load_segments(pcpu))
+	}
+	if(load_segments(pcpu)) {
+		fprintf(stderr, "Cannot load segments!\n");
 		return -1;
-	if(get_symtab(elf, elfsz, &pcpu->shsymtab, &pcpu->shsymstr))
+	}
+	if(get_symtab(elf, elfsz, &pcpu->shsymtab, &pcpu->shsymstr)) {
+		fprintf(stderr, "Cannot load symbols!\n");
 		return -1;
-	if(eh->e_entry >= pcpu->memsz - pcpu->stksz)
+	}
+	if(eh->e_entry >= pcpu->memsz - pcpu->stksz) {
+		fprintf(stderr, "Invalid entry address!\n");
 		return -1;
+	}
 	
 	/* Segments successfully loaded; set up registers for program start. */
 
 	symgp  = mips_elf_find_symbol(pcpu, "_gp");
 	if(!symgp || (symgp->st_shndx != SHN_ABS)
 	   || (symgp->st_value >= pcpu->memsz - pcpu->stksz)
-	   || (symgp->st_value < MIPS_LOWBASE))
+	   || (symgp->st_value < MIPS_LOWBASE)) {
+	   	fprintf(stderr, "sym _gp error %p\n", symgp);
 		return -1;
+	}
 		
 	symend = mips_elf_find_symbol(pcpu, "_end");
 	if(!symend || (symend->st_shndx != SHN_ABS)
 	   || (symend->st_value >= pcpu->memsz - pcpu->stksz)
-	   || (symend->st_value < MIPS_LOWBASE))
+	   || (symend->st_value < MIPS_LOWBASE)) {
+	   	fprintf(stderr, "sym _end error\n");
 		return -1;
+	}
 	
 	if((eh->e_entry >= pcpu->memsz - pcpu->stksz)
-	   || (eh->e_entry < MIPS_LOWBASE))
+	   || (eh->e_entry < MIPS_LOWBASE)) {
+	   	fprintf(stderr, "entry error\n");
 		return -1;
+	}
 	
 	pcpu->brk      = symend->st_value;
 	pcpu->pc       = eh->e_entry;
@@ -190,8 +205,8 @@ static int check_eh_limits(const Elf32_Ehdr *eh, size_t sz)
 	if(eh->e_ehsize != sizeof(*eh))
 		return -1;
 	
-	if((eh->e_ident[0] != '\177') || (eh->e_ident[1] != 'E') ||
-			(eh->e_ident[2] != 'L') || (eh->e_ident[3] != 'F'))
+	if((eh->e_ident[0] != ELFMAG0) || (eh->e_ident[1] != ELFMAG1) ||
+			(eh->e_ident[2] != ELFMAG2) || (eh->e_ident[3] != ELFMAG3))
 		return -1;
 	if((eh->e_ident[EI_CLASS] != ELFCLASS32) ||
 			(eh->e_ident[EI_DATA] != ELFDATA2LSB))
@@ -254,10 +269,14 @@ static int load_segment(struct mips_cpu *pcpu, const Elf32_Phdr *ph)
 	
 	if(ph->p_offset + ph->p_filesz > elfsz)
 		return -1;
-	if(ph->p_vaddr + ph->p_memsz > memsz)
+	if(ph->p_vaddr + ph->p_memsz > memsz) {
+		fprintf(stderr, "Virtual address + elf memsz > %u\n", (unsigned int)memsz);
 		return -1;
-	if(ph->p_vaddr < MIPS_LOWBASE)
+	}
+	if(ph->p_vaddr < MIPS_LOWBASE) {
+		fprintf(stderr, "Illegal virtual address: %.8x\n", (unsigned int)ph->p_vaddr);
 		return -1;
+	}
 	if((ph->p_filesz % 4) || (ph->p_memsz % 4) || (ph->p_memsz < ph->p_filesz))
 		return -1;
 	
