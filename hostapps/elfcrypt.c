@@ -45,6 +45,27 @@
 static void check_eh_limits(const Elf32_Ehdr*, size_t);
 static void crypt_segment(const struct rc5_key*, char*, Elf32_Phdr*);
 
+static void randomize_key(struct rc5_key *key)
+{
+	FILE* fd;
+	int i;
+	
+	fd = fopen("/dev/urandom", "r");
+	if (fd == NULL) {
+		fprintf(stderr, "Cannot open /dev/urandom");
+		exit(1);
+	}
+	
+	fread(key->key, 1, sizeof(key->key), fd);
+	
+	fclose(fd);
+
+	printf("Generated key: ");
+	for (i=0;i<sizeof(key->key);i++)
+		printf("%.2x", key->key[i]);
+	printf("\n");
+}
+
 int main(int argc, char **argv)
 {
 	struct rc5_key key;
@@ -55,13 +76,18 @@ int main(int argc, char **argv)
 	FILE *out;
 	unsigned i, cnt;
 	
-	if(argc != 4) {
+	if(argc < 3) {
 		fprintf(stderr, "USAGE: %s ELF-IN ELF-OUT HEXKEY\n", argv[0]);
 		return 1;
 	}
-	if(!rc5_convert_key(&key, argv[3])) {
-		fprintf(stderr, "can't convert key to internal form\n");
-		return 1;
+	
+	if (argc == 3) {
+		randomize_key(&key);
+	} else {
+		if(!rc5_convert_key(&key, argv[3])) {
+			fprintf(stderr, "can't convert key to internal form\n");
+			return 1;
+		}
 	}
 	rc5_setup(&key);
 
