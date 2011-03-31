@@ -127,7 +127,7 @@ static void printaddr(struct mips_cpu *pcpu, const char *label, unsigned addr)
 	Elf32_Sym *sym;
 	const char *symname;
 
-	printf("%s%u[", label, addr);
+	printf("%s%.8x[", label, (unsigned int)addr);
 	if((sym = mips_elf_find_address(pcpu, addr)) &&
 	   (symname = mips_elf_get_symname(pcpu, sym))) {
 		printf("%s", symname);
