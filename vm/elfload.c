@@ -239,8 +239,10 @@ static int load_segments(struct mips_cpu *pcpu)
 	for(i = 0; i < eh->e_phnum; i++) {
 		Elf32_Phdr *ph = get_phdr(elf, elfsz, i);
 		
-		if(!ph)
+		if(!ph) {
+			fprintf(stderr, "Cannot load segment address\n");
 			return -1;
+		}
 		switch(ph->p_type) {
 		case PT_NULL:
 			break;
@@ -267,8 +269,10 @@ static int load_segment(struct mips_cpu *pcpu, const Elf32_Phdr *ph)
 	size_t memsz = pcpu->memsz - pcpu->stksz;
 	unsigned i;
 	
-	if(ph->p_offset + ph->p_filesz > elfsz)
+	if(ph->p_offset + ph->p_filesz > elfsz) {
+		fprintf(stderr, "Segment offset and filesize exceed ELF size\n");
 		return -1;
+	}
 	if(ph->p_vaddr + ph->p_memsz > memsz) {
 		fprintf(stderr, "Virtual address + elf memsz > %u\n", (unsigned int)memsz);
 		return -1;
@@ -277,8 +281,10 @@ static int load_segment(struct mips_cpu *pcpu, const Elf32_Phdr *ph)
 		fprintf(stderr, "Illegal virtual address: %.8x\n", (unsigned int)ph->p_vaddr);
 		return -1;
 	}
-	if((ph->p_filesz % 4) || (ph->p_memsz % 4) || (ph->p_memsz < ph->p_filesz))
+	if((ph->p_filesz % 4) || (ph->p_memsz % 4) || (ph->p_memsz < ph->p_filesz)) {
+		fprintf(stderr, "Segment file or memory size is not a multiple of 4\n");
 		return -1;
+	}
 	
 	/*
 	  Because of the above checks, the pokes below shall not throw.  The
