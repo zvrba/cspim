@@ -86,6 +86,9 @@ static void execute(struct mips_cpu *pcpu)
 			printaddr(pcpu, "PC=", pcpu->pc);
 			printaddr(pcpu, ",last_branch=", last_branch);
 			printf("\n");
+		} else {
+			printf("PC=%.8x[unknown],last_branch=%.8x[unknown]\n", 
+				(unsigned int)pcpu->pc, (unsigned int)last_branch);
 		}
 
 		if((err = mips_execute(pcpu)) == MIPS_E_OK)
