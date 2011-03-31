@@ -249,7 +249,7 @@ static int load_segments(struct mips_cpu *pcpu)
 				return -1;
 			break;
 		default:
-			return -1;
+			break;
 		}
 	}
 	return 0;
