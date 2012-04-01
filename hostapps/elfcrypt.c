@@ -70,8 +70,8 @@ int main(int argc, char **argv)
 	check_eh_limits(eh, elfsz);
 
 	/* Iterate segments, check bounds and encrypt PT_LOAD. */
-	ph = (Elf32_Phdr*)(elf + eh->e_phoff);
 	for(i = 0, cnt = 0; i < eh->e_phnum; i++) {
+		ph = (Elf32_Phdr*)(elf + eh->e_phoff + i*sizeof(Elf32_Phdr));
 		if(ph->p_type != PT_LOAD)
 			continue;
 		++cnt;
