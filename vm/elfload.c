@@ -58,7 +58,13 @@
 #include "types.h"
 #include "cpu.h"
 #include "elf.h"
+
+#ifndef __mips__
 #include <stdio.h>
+#else
+#define stderr 0
+int fprintf(void *f, const char *fmt, ...) { return -1; }
+#endif
 
 static int check_eh_limits(const Elf32_Ehdr*, size_t);
 static int load_segments(struct mips_cpu*);
