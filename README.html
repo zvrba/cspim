@@ -19,7 +19,7 @@ cryptography" The International Dependability Conference, 2010. ARES
 <p>All files in this distribution, unless otherwise explicitly noted, are</p>
 
 <ul>
-<li>(c) 2008-2012 Zeljko Vrba <a href="&#109;&#97;&#x69;&#108;t&#x6F;:z&#x76;&#x72;&#98;&#97;&#x2E;&#x65;&#120;&#116;&#101;&#114;n&#97;&#x6C;&#64;z&#x76;&#114;&#x62;&#97;&#46;&#x6E;&#101;&#x74;">z&#x76;&#x72;&#98;&#97;&#x2E;&#x65;&#120;&#116;&#101;&#114;n&#97;&#x6C;&#64;z&#x76;&#114;&#x62;&#97;&#46;&#x6E;&#101;&#x74;</a></li>
+<li>(c) 2008-2012 Zeljko Vrba <a href="&#x6D;&#97;&#x69;&#x6C;&#116;&#x6F;:&#x7A;&#x76;r&#x62;&#97;&#46;&#101;&#120;&#x74;&#101;&#x72;&#110;&#x61;&#108;&#64;&#x7A;&#x76;&#x72;&#x62;a&#x2E;&#x6E;&#101;&#x74;">&#x7A;&#x76;r&#x62;&#97;&#46;&#101;&#120;&#x74;&#101;&#x72;&#110;&#x61;&#108;&#64;&#x7A;&#x76;&#x72;&#x62;a&#x2E;&#x6E;&#101;&#x74;</a></li>
 </ul>
 
 <p>and are distributed under the following license:</p>
@@ -143,9 +143,8 @@ These programs should be executed with <code>./hostapps/run program</code>.</p>
 <h2>Encrypted execution</h2>
 
 <p>All LOAD ELF segments of executables can be encrypted with RC-5 encryption
-algorithm using 32-bit block size and 128-bit key.  The encryption uses ECB
-mode, which should <em>not be used for anything but simple demos</em>!  Example
-session:</p>
+algorithm using 32-bit block size and 128-bit key.  The encryption uses CTR
+mode.  Example session:</p>
 
 <pre><code>./hostapps/elfcrypt mipsapps/hanoi /tmp/hanoi-crypt 0123456789ABCDEF0123456789ABCDEF
 ./hostapps/run /tmp/hanoi-crypt 0123456789ABCDEF0123456789ABCDEF

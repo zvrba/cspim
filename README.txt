@@ -135,9 +135,8 @@ These programs should be executed with `./hostapps/run program`.
 Encrypted execution
 -------------------
 All LOAD ELF segments of executables can be encrypted with RC-5 encryption
-algorithm using 32-bit block size and 128-bit key.  The encryption uses ECB
-mode, which should *not be used for anything but simple demos*!  Example
-session:
+algorithm using 32-bit block size and 128-bit key.  The encryption uses CTR
+mode.  Example session:
 
     ./hostapps/elfcrypt mipsapps/hanoi /tmp/hanoi-crypt 0123456789ABCDEF0123456789ABCDEF
     ./hostapps/run /tmp/hanoi-crypt 0123456789ABCDEF0123456789ABCDEF
