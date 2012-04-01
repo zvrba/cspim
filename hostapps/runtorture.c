@@ -83,18 +83,13 @@ static void execute(struct mips_cpu *pcpu)
 		if((sym = mips_elf_find_address(pcpu, pcpu->pc)) && 
 		   (sym->st_value == pcpu->pc) &&
 		   (symname = mips_elf_get_symname(pcpu, sym))) {
-			printaddr(pcpu, "\nPC=", pcpu->pc);
+			printaddr(pcpu, "PC=", pcpu->pc);
 			printaddr(pcpu, ",last_branch=", last_branch);
 			printf("\n");
-		} else {
-			printf("\nPC=%.8x[unknown],last_branch=%.8x[unknown]\n", 
-				(unsigned int)pcpu->pc, (unsigned int)last_branch);
 		}
 
-		if((err = mips_execute(pcpu)) == MIPS_E_OK) {
-			mips_dump_cpu(pcpu);
+		if((err = mips_execute(pcpu)) == MIPS_E_OK)
 			continue;
-		}
 		
 		/* Tolerated exceptions must exactly match PC. */
 		if((sym = mips_elf_find_address(pcpu, pcpu->pc)) && 
