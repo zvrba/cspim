@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 			fprintf(stderr, "input segment %u is out of ELF bounds\n", i);
 			exit(1);
 		}
-		if((ph->p_filesz % RC5_BLOCKSZ) || (ph->p_memsz % RC5_BLOCKSZ)) {
+		if((ph->p_filesz % CIPHER_BLOCKSZ) || (ph->p_memsz % CIPHER_BLOCKSZ)) {
 			/* 4 bytes is the cipher block size */
 			fprintf(stderr, "input segment file/memory size is not a multiple of 4\n");
 			exit(1);
@@ -133,9 +133,17 @@ static void crypt_segment(const struct rc5_key *pk, char *elf, Elf32_Phdr *ph)
 {
 	char *p = elf + ph->p_offset;
 	unsigned i;
+	unsigned char ctr[4];
+	mips_uword w;
 
-	for(i = 0; i < ph->p_filesz; i += RC5_BLOCKSZ)
-		rc5_ecb_encrypt(pk, p+i, p+i);
+	for(i = 0; i < size; i += CIPHER_BLOCKSZ) {
+                w = (mips_uword)(base+i);
+                ctr[0] = w;
+                ctr[1] = (w) >> 8;
+		ctr[2] = (w) >> 16;
+		ctr[3] = (w) >> 24;
+		rc5_ctr_encrypt(pk, ctr, p+i, p+i);
+	}
 }
 
 static void check_eh_limits(const Elf32_Ehdr *eh, size_t elfsz)

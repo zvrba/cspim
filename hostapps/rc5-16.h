@@ -33,7 +33,7 @@
 #ifndef RC5_16_H__
 #define RC5_16_H__
 
-#define RC5_BLOCKSZ	4			/* (bytes) */
+#define CIPHER_BLOCKSZ	4			/* (bytes) */
 #define RC5_KEYLEN	16			/* (bytes) */
 #define RC5_ROUNDS	12			/* # of rounds */
 
@@ -55,5 +55,9 @@ void rc5_ecb_encrypt(const struct rc5_key *ks, void *src, void *dst);
 
 /** Decrypt a single block.  It is allowed that src == dst. */
 void rc5_ecb_decrypt(const struct rc5_key *ks, void *src, void *dst);
+
+void rc5_ctr_encrypt(const struct rc5_key *ks, void* counter, void *src, void *dst);
+
+#define rc5_ctr_decrypt rc5_ctr_encrypt
 
 #endif	/* RC5_16_H__ */

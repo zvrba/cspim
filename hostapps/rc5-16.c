@@ -35,6 +35,7 @@
  */
 
 #include "rc5-16.h"
+#include <stdint.h>
 
 #if _MSC_VER < 1600
 #define	inline	__inline
@@ -53,7 +54,7 @@
 								/* Magic constants must be odd; add 1 if the
 								 * formula yields even. */
 
-#if RC5_BLOCKSZ != BSZ
+#if CIPHER_BLOCKSZ != BSZ
 #error "Mismatch between header and source parameters."
 #endif
 
@@ -127,6 +128,30 @@ void rc5_ecb_encrypt(const struct rc5_key *ks, void *srcv, void *dstv)
 	dst[2] = B & 0xFF;
 	dst[3] = B >> 8;
 #undef S
+}
+
+/* Encrypts in CTR-32bit mode. counter should be a unique IV.
+ */
+void rc5_ctr_encrypt(const struct rc5_key *ks, void* counter, void *_src, void *_dst)
+{
+uint32_t* dst = _dst;
+uint32_t src = *((uint32_t*)_src);
+
+	rc5_ecb_encrypt(ks, counter, dst);
+
+	*dst ^= src;
+}
+
+/* Encrypts in CTR-32bit mode. counter should be a unique IV.
+ */
+void rc5_ctr_encrypt(const struct rc5_key *ks, void* counter, void *_src, void *_dst)
+{
+uint32_t* dst = _dst;
+uint32_t src = *((uint32_t*)_src);
+
+	rc5_ecb_encrypt(ks, counter, dst);
+
+	*dst ^= src;
 }
 
 void rc5_ecb_decrypt(const struct rc5_key *ks, void *srcv, void *dstv)

@@ -152,12 +152,26 @@ execute:
 static mips_uword rc5_peek(MIPS_CPU *pcpu, mips_uword addr)
 {
 	mips_uword ret = mips_identity_peek_uw(pcpu, addr);
-	rc5_ecb_decrypt(&Gkey, &ret, &ret);
+	unsigned char ctr[4];
+	
+	ctr[0] = addr;
+	ctr[1] = (addr) >> 8;
+	ctr[2] = (addr) >> 16;
+	ctr[3] = (addr) >> 24;
+
+	rc5_ctr_decrypt(&Gkey, &ctr, &ret, &ret);
 	return ret;
 }
 
 static void rc5_poke(MIPS_CPU *pcpu, mips_uword addr, mips_uword w)
 {
-	rc5_ecb_encrypt(&Gkey, &w, &w);
+	unsigned char ctr[4];
+	
+	ctr[0] = addr;
+	ctr[1] = (addr) >> 8;
+	ctr[2] = (addr) >> 16;
+	ctr[3] = (addr) >> 24;
+
+	rc5_ctr_encrypt(&Gkey, &ctr, &w, &w);
 	mips_identity_poke_uw(pcpu, addr, w);
 }
