@@ -136,10 +136,10 @@ static void crypt_segment(const struct rc5_key *pk, char *elf, Elf32_Phdr *ph)
 	unsigned char ctr[4];
 	mips_uword w;
 
-	for(i = 0; i < size; i += CIPHER_BLOCKSZ) {
-                w = (mips_uword)(base+i);
-                ctr[0] = w;
-                ctr[1] = (w) >> 8;
+	for(i = 0; i < ph->p_filesz; i += CIPHER_BLOCKSZ) {
+                w = (mips_uword)(ph->p_vaddr + i);
+		ctr[0] = w;
+		ctr[1] = (w) >> 8;
 		ctr[2] = (w) >> 16;
 		ctr[3] = (w) >> 24;
 		rc5_ctr_encrypt(pk, ctr, p+i, p+i);

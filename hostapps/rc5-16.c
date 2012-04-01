@@ -130,27 +130,12 @@ void rc5_ecb_encrypt(const struct rc5_key *ks, void *srcv, void *dstv)
 #undef S
 }
 
-/* Encrypts in CTR-32bit mode. counter should be a unique IV.
- */
+/* Encrypts in CTR-32bit mode. counter should be a unique IV. */
 void rc5_ctr_encrypt(const struct rc5_key *ks, void* counter, void *_src, void *_dst)
 {
-uint32_t* dst = _dst;
-uint32_t src = *((uint32_t*)_src);
-
+	uint32_t* dst = _dst;
+	uint32_t src = *((uint32_t*)_src);
 	rc5_ecb_encrypt(ks, counter, dst);
-
-	*dst ^= src;
-}
-
-/* Encrypts in CTR-32bit mode. counter should be a unique IV.
- */
-void rc5_ctr_encrypt(const struct rc5_key *ks, void* counter, void *_src, void *_dst)
-{
-uint32_t* dst = _dst;
-uint32_t src = *((uint32_t*)_src);
-
-	rc5_ecb_encrypt(ks, counter, dst);
-
 	*dst ^= src;
 }
 
