@@ -4,6 +4,7 @@ ADD_DEFINITIONS(-g -Wall)
 
 # TODO! Add optimization option
 set(HOSTED ON CACHE BOOL "Hosted or embedded build.")
+set(SKIP_APPS ON CACHE BOOL "Skip building mips apps in mipsapps")
 
 ADD_SUBDIRECTORY(vm)
 ADD_SUBDIRECTORY(mipsapps)
