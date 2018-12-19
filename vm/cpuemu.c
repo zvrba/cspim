@@ -35,6 +35,7 @@
  */
 
 #include "cpu.h"
+#include "mips_endian.h"
 
 #if defined(_MSC_VER) && (_MSC_VER < 1600)
 #define	inline	__inline
@@ -483,13 +484,13 @@ static void do_divmult(int insn, int opcode, MIPS_CPU *pcpu)
  */
 mips_uword mips_identity_peek_uw(MIPS_CPU *pcpu, mips_uword addr)
 {
-	return *(mips_uword*)(pcpu->base + addr);
+	return te32toh(*(mips_uword*)(pcpu->base + addr));
 }
 
 /** Identity function to poke a word. */
 void mips_identity_poke_uw(MIPS_CPU *pcpu, mips_uword addr, mips_uword w)
 {
-	*(mips_uword*)(pcpu->base + addr) = w;
+	*(mips_uword*)(pcpu->base + addr) = htote32(w);
 }
 
 /* The peek and poke functions must be implemented exclusively in terms of
@@ -542,6 +543,7 @@ mips_uword mips_peek_uw(MIPS_CPU *pcpu, mips_uword addr)
 	return pcpu->peek_uw(pcpu, addr);
 }
 
+// TODO: will these byte to word transformations work even with byte swapping? We want the byte to always land in the same place within the word
 void mips_poke_ub(MIPS_CPU *pcpu, mips_uword addr, mips_ubyte v)
 {
 	int s = addr & 3U;

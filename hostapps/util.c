@@ -97,6 +97,10 @@ void prepare_cpu(MIPS_CPU *pcpu, const char *exename, const char *asckey)
 	
 	read_elf(exename, &elf, &elfsz);
 	if(asckey) {
+#if defined(MIPS_BE)
+		fprintf(stderr, "encryption is not currently supported for big endian MIPS\n");
+		exit(1);
+#else
 		if(!rc5_convert_key(&Gkey, asckey)) {
 			fprintf(stderr, "can't convert key\n");
 			exit(1);
@@ -104,6 +108,7 @@ void prepare_cpu(MIPS_CPU *pcpu, const char *exename, const char *asckey)
 		rc5_setup(&Gkey);
 		pcpu->peek_uw = rc5_peek;
 		pcpu->poke_uw = rc5_poke;
+#endif /* MIPS_BE */
 	}
 	if(mips_elf_load(pcpu, elf, elfsz) < 0) {
 		fprintf(stderr, "error preparing ELF for execution\n");

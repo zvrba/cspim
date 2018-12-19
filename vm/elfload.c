@@ -58,6 +58,7 @@
 #include "types.h"
 #include "cpu.h"
 #include "elf.h"
+#include "mips_endian.h"
 
 static int check_eh_limits(const Elf32_Ehdr*, size_t);
 static int load_segments(struct mips_cpu*);
@@ -87,30 +88,30 @@ int mips_elf_load(struct mips_cpu *pcpu, const char *elf, size_t elfsz)
 		return -1;
 	if(get_symtab(elf, elfsz, &pcpu->shsymtab, &pcpu->shsymstr))
 		return -1;
-	if(eh->e_entry >= pcpu->memsz - pcpu->stksz)
+	if(te32toh(eh->e_entry) >= pcpu->memsz - pcpu->stksz)
 		return -1;
 	
 	/* Segments successfully loaded; set up registers for program start. */
 
 	symgp  = mips_elf_find_symbol(pcpu, "_gp");
-	if(!symgp || (symgp->st_shndx != SHN_ABS)
-	   || (symgp->st_value >= pcpu->memsz - pcpu->stksz)
-	   || (symgp->st_value < MIPS_LOWBASE))
+	if(!symgp || (te16toh(symgp->st_shndx) != SHN_ABS)
+	   || (te32toh(symgp->st_value) >= pcpu->memsz - pcpu->stksz)
+	   || (te32toh(symgp->st_value) < MIPS_LOWBASE))
 		return -1;
 		
 	symend = mips_elf_find_symbol(pcpu, "_end");
-	if(!symend || (symend->st_shndx != SHN_ABS)
-	   || (symend->st_value >= pcpu->memsz - pcpu->stksz)
-	   || (symend->st_value < MIPS_LOWBASE))
+	if(!symend || (te16toh(symend->st_shndx) != SHN_ABS)
+	   || (te32toh(symend->st_value) >= pcpu->memsz - pcpu->stksz)
+	   || (te32toh(symend->st_value) < MIPS_LOWBASE))
 		return -1;
 	
-	if((eh->e_entry >= pcpu->memsz - pcpu->stksz)
-	   || (eh->e_entry < MIPS_LOWBASE))
+	if((te32toh(eh->e_entry) >= pcpu->memsz - pcpu->stksz)
+	   || (te32toh(eh->e_entry) < MIPS_LOWBASE))
 		return -1;
 	
-	pcpu->brk      = symend->st_value;
-	pcpu->pc       = eh->e_entry;
-	pcpu->r.ur[28] = symgp->st_value;	/* global data pointer */
+	pcpu->brk      = te32toh(symend->st_value);
+	pcpu->pc       = te32toh(eh->e_entry);
+	pcpu->r.ur[28] = te32toh(symgp->st_value);	/* global data pointer */
 	pcpu->r.ur[29] = pcpu->memsz - 4;	/* stack pointer */
 	pcpu->r.ur[31] = 0;					/* link register */
 
@@ -120,10 +121,10 @@ int mips_elf_load(struct mips_cpu *pcpu, const char *elf, size_t elfsz)
 Elf32_Sym *mips_elf_find_symbol(struct mips_cpu *pcpu, const char *name)
 {
 	Elf32_Shdr *shsymtab = pcpu->shsymtab;
-	unsigned    n =shsymtab->sh_size / shsymtab->sh_entsize;
+	unsigned    n = te32toh(shsymtab->sh_size) / te32toh(shsymtab->sh_entsize);
 	unsigned    i;
 	
-	if(shsymtab->sh_offset  + shsymtab->sh_size > pcpu->elfsz)
+	if(te32toh(shsymtab->sh_offset)  + te32toh(shsymtab->sh_size) > pcpu->elfsz)
 		return NULL;
 	
 	for(i = 0; i < n; i++) {
@@ -132,11 +133,11 @@ Elf32_Sym *mips_elf_find_symbol(struct mips_cpu *pcpu, const char *name)
 
 	    if(!sym)
 			return NULL;
-	    if(ELF_ST_BIND(sym->st_info) != STB_GLOBAL)
+	    if(ELF_ST_BIND(te8toh(sym->st_info)) != STB_GLOBAL)
 			continue;
 		
 	    symname = get_string(pcpu->elf, pcpu->elfsz,
-				pcpu->shsymstr, sym->st_name);
+				pcpu->shsymstr, te32toh(sym->st_name));
 	    if(!symname)
 			return NULL;
 	    if(Sequal(name, symname))
@@ -148,12 +149,12 @@ Elf32_Sym *mips_elf_find_symbol(struct mips_cpu *pcpu, const char *name)
 Elf32_Sym *mips_elf_find_address(struct mips_cpu *pcpu, Elf32_Addr addr)
 {
 	Elf32_Shdr *shsymtab = pcpu->shsymtab;
-	unsigned    n = shsymtab->sh_size / shsymtab->sh_entsize;
+	unsigned    n = te32toh(shsymtab->sh_size) / te32toh(shsymtab->sh_entsize);
 	Elf32_Addr  min = (unsigned)-1;
 	Elf32_Sym  *ret = NULL;
 	unsigned    i;
 
-	if((shsymtab->sh_offset  + shsymtab->sh_size > pcpu->elfsz)
+	if((te32toh(shsymtab->sh_offset) + te32toh(shsymtab->sh_size) > pcpu->elfsz)
 	|| (addr >= pcpu->memsz))
 		return NULL;
 	
@@ -162,12 +163,12 @@ Elf32_Sym *mips_elf_find_address(struct mips_cpu *pcpu, Elf32_Addr addr)
 
 		if(!sym)
 			return NULL;
-		if((ELF_ST_BIND(sym->st_info) != STB_GLOBAL) ||
-				(ELF_ST_TYPE(sym->st_info) >= STT_SECTION))
+		if((ELF_ST_BIND(te8toh(sym->st_info)) != STB_GLOBAL) ||
+				(ELF_ST_TYPE(te8toh(sym->st_info)) >= STT_SECTION))
 			continue;
 		
-		if(sym->st_value <= addr) {
-			Elf32_Addr diff = addr - sym->st_value;
+		if(te32toh(sym->st_value) <= addr) {
+			Elf32_Addr diff = addr - te32toh(sym->st_value);
 			
 			if(diff < min) {
 				min = diff;
@@ -182,27 +183,27 @@ Elf32_Sym *mips_elf_find_address(struct mips_cpu *pcpu, Elf32_Addr addr)
 
 const char *mips_elf_get_symname(struct mips_cpu *pcpu, Elf32_Sym *sym)
 {
-	return get_string(pcpu->elf, pcpu->elfsz, pcpu->shsymstr, sym->st_name);
+	return get_string(pcpu->elf, pcpu->elfsz, pcpu->shsymstr, te32toh(sym->st_name));
 }
 
 static int check_eh_limits(const Elf32_Ehdr *eh, size_t sz)
 {
-	if(eh->e_ehsize != sizeof(*eh))
+	if(te16toh(eh->e_ehsize) != sizeof(*eh))
 		return -1;
-	
+
 	if((eh->e_ident[0] != '\177') || (eh->e_ident[1] != 'E') ||
 			(eh->e_ident[2] != 'L') || (eh->e_ident[3] != 'F'))
 		return -1;
 	if((eh->e_ident[EI_CLASS] != ELFCLASS32) ||
 			(eh->e_ident[EI_DATA] != ELFDATA2LSB))
 		return -1;
-	if((eh->e_type != ET_EXEC) ||(eh->e_machine != EM_MIPS))
+	if((te16toh(eh->e_type) != ET_EXEC) ||(te16toh(eh->e_machine) != EM_MIPS))
 		return -1;
 	
-	if(eh->e_phoff + eh->e_phnum*eh->e_phentsize > sz)
+	if(te32toh(eh->e_phoff) + te16toh(eh->e_phnum) * te16toh(eh->e_phentsize) > sz)
 		return -1;
-	if((eh->e_shoff + eh->e_shnum*eh->e_shentsize > sz) ||
-			(eh->e_shstrndx >= eh->e_shnum))
+	if((te32toh(eh->e_shoff) + te16toh(eh->e_shnum) * te16toh(eh->e_shentsize) > sz) ||
+			(te16toh(eh->e_shstrndx) >= te16toh(eh->e_shnum)))
 		return -1;
 	
 	/* All checks passed. */
@@ -221,12 +222,12 @@ static int load_segments(struct mips_cpu *pcpu)
 	Elf32_Ehdr *eh    = (Elf32_Ehdr*)elf;
 	unsigned    i;
 	
-	for(i = 0; i < eh->e_phnum; i++) {
+	for(i = 0; i < te16toh(eh->e_phnum); i++) {
 		Elf32_Phdr *ph = get_phdr(elf, elfsz, i);
 		
 		if(!ph)
 			return -1;
-		switch(ph->p_type) {
+		switch(te32toh(ph->p_type)) {
 		case PT_NULL:
 			break;
 		case PT_LOAD:
@@ -252,13 +253,13 @@ static int load_segment(struct mips_cpu *pcpu, const Elf32_Phdr *ph)
 	size_t memsz = pcpu->memsz - pcpu->stksz;
 	unsigned i;
 	
-	if(ph->p_offset + ph->p_filesz > elfsz)
+	if(te32toh(ph->p_offset) + te32toh(ph->p_filesz) > elfsz)
 		return -1;
-	if(ph->p_vaddr + ph->p_memsz > memsz)
+	if(te32toh(ph->p_vaddr) + te32toh(ph->p_memsz) > memsz)
 		return -1;
-	if(ph->p_vaddr < MIPS_LOWBASE)
+	if(te32toh(ph->p_vaddr) < MIPS_LOWBASE)
 		return -1;
-	if((ph->p_filesz % 4) || (ph->p_memsz % 4) || (ph->p_memsz < ph->p_filesz))
+	if((te32toh(ph->p_filesz) % 4) || (te32toh(ph->p_memsz) % 4) || (te32toh(ph->p_memsz) < te32toh(ph->p_filesz)))
 		return -1;
 	
 	/*
@@ -268,11 +269,11 @@ static int load_segment(struct mips_cpu *pcpu, const Elf32_Phdr *ph)
 	  case memory transformation (e.g. encryption) is applied.
 	*/
 
-	for(i = 0; i < ph->p_filesz; i += 4)
-		mips_identity_poke_uw(pcpu, ph->p_vaddr+i,
-							  *(mips_uword*)(elf + ph->p_offset+i));
-	for(; i < ph->p_memsz; i += 4)
-		mips_poke_uw(pcpu, ph->p_vaddr+i, 0);
+	for(i = 0; i < te32toh(ph->p_filesz); i += 4)
+		mips_identity_poke_uw(pcpu, te32toh(ph->p_vaddr) + i,
+							  te32toh(*(mips_uword*)(elf + te32toh(ph->p_offset) + i)));
+	for(; i < te32toh(ph->p_memsz); i += 4)
+		mips_poke_uw(pcpu, te32toh(ph->p_vaddr) + i, 0);
 
 	return 0;
 }
@@ -292,14 +293,14 @@ static int get_symtab(const char *elf, size_t elfsz,
 	
 	*shsymtab = *shsymstr = NULL;
 	
-	for(i = 0; i < eh->e_shnum; i++) {
+	for(i = 0; i < te16toh(eh->e_shnum); i++) {
 		Elf32_Shdr *sh = get_shdr(elf, elfsz, i);
 		
 		if(!sh)
 			return -1;
-		if(i == eh->e_shstrndx) {
+		if(i == te16toh(eh->e_shstrndx)) {
 			shshstr = sh;
-		} else if(sh->sh_type == SHT_SYMTAB) {
+		} else if(te32toh(sh->sh_type) == SHT_SYMTAB) {
 			if(*shsymtab)		/* Don't allow multiple symtabs. */
 				return -1;
 			*shsymtab = sh;
@@ -309,16 +310,16 @@ static int get_symtab(const char *elf, size_t elfsz,
 	if(!*shsymtab || !shshstr)
 		return -1;
 	
-	secname = get_string(elf, elfsz, shshstr, (*shsymtab)->sh_name);
-	if((*shsymtab)->sh_link >= eh->e_shnum ||
+	secname = get_string(elf, elfsz, shshstr, te32toh((*shsymtab)->sh_name));
+	if(te32toh((*shsymtab)->sh_link) >= te16toh(eh->e_shnum) ||
 			!secname || !Sequal(secname, ".symtab"))
 		return -1;
 	
-	*shsymstr = get_shdr(elf, elfsz, (*shsymtab)->sh_link);
+	*shsymstr = get_shdr(elf, elfsz, te32toh((*shsymtab)->sh_link));
 	if(!*shsymstr)
 		return -1;
-	secname = get_string(elf, elfsz, shshstr, (*shsymstr)->sh_name);
-	if(((*shsymstr)->sh_type != SHT_STRTAB) ||
+	secname = get_string(elf, elfsz, shshstr, te32toh((*shsymstr)->sh_name));
+	if((te32toh((*shsymstr)->sh_type) != SHT_STRTAB) ||
 			!secname || !Sequal(secname, ".strtab"))
 		return -1;
 	
@@ -332,17 +333,17 @@ static int get_symtab(const char *elf, size_t elfsz,
 static const char *get_string(const char *elf, size_t elfsz,
 		const Elf32_Shdr *sh, size_t ndx)
 {
-	Elf32_Off	off = sh->sh_offset;
+	Elf32_Off	off = te32toh(sh->sh_offset);
 	size_t		i;
 
-	if((sh->sh_type != SHT_STRTAB) || (ndx >= sh->sh_size) || (off >= elfsz))
+	if((te32toh(sh->sh_type) != SHT_STRTAB) || (ndx >= te32toh(sh->sh_size)) || (off >= elfsz))
 		return NULL;
 	
 	/* Check that the string doesn't go out of bounds of its section.  No
 	 * other way than to search for 0-terminator.  NULL-terminated strings
 	 * just suck. */
 
-	for(i = ndx; i < sh->sh_size; i++)
+	for(i = ndx; i < te32toh(sh->sh_size); i++)
 		if(!elf[off+i])
 			return elf+off+ndx;
 	
@@ -353,10 +354,10 @@ static const char *get_string(const char *elf, size_t elfsz,
 static Elf32_Sym *get_sym(const char *elf, size_t elfsz,
 		const Elf32_Shdr *sh, size_t ndx)
 {
-	Elf32_Off toff = ndx*sh->sh_entsize;
-	Elf32_Off off  = sh->sh_offset + toff;
+	Elf32_Off toff = ndx * te32toh(sh->sh_entsize);
+	Elf32_Off off  = te32toh(sh->sh_offset) + toff;
 	
-	if((sh->sh_type != SHT_SYMTAB) || (toff >= sh->sh_size) || (off >= elfsz))
+	if((te32toh(sh->sh_type) != SHT_SYMTAB) || (toff >= te32toh(sh->sh_size)) || (off >= elfsz))
 		return NULL;
 	return (Elf32_Sym*)(elf + off);
 }
@@ -365,9 +366,9 @@ static Elf32_Sym *get_sym(const char *elf, size_t elfsz,
 static Elf32_Phdr *get_phdr(const char *elf, size_t elfsz, size_t ndx)
 {
 	Elf32_Ehdr *eh  = (Elf32_Ehdr*)elf;
-	Elf32_Off   off = eh->e_phoff + ndx * eh->e_phentsize;
+	Elf32_Off   off = te32toh(eh->e_phoff) + ndx * te16toh(eh->e_phentsize);
 
-	if((ndx >= eh->e_phnum) || (off >= elfsz))
+	if((ndx >= te16toh(eh->e_phnum)) || (off >= elfsz))
 		return NULL;
 	return (Elf32_Phdr*)(elf + off);
 }
@@ -375,9 +376,9 @@ static Elf32_Phdr *get_phdr(const char *elf, size_t elfsz, size_t ndx)
 static Elf32_Shdr *get_shdr(const char *elf, size_t elfsz, size_t ndx)
 {
 	Elf32_Ehdr *eh  = (Elf32_Ehdr*)elf;
-	Elf32_Off   off = eh->e_shoff + ndx * eh->e_shentsize;
+	Elf32_Off   off = te32toh(eh->e_shoff) + ndx * te16toh(eh->e_shentsize);
 	
-	if((ndx >= eh->e_shnum) || (off >= elfsz))
+	if((ndx >= te16toh(eh->e_shnum)) || (off >= elfsz))
 		return NULL;
 	return (Elf32_Shdr*)(elf + off);
 }

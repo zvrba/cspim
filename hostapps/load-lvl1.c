@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cpu.h"
+#include "mips_endian.h"
 #include "rc5-16.h"
 #include "util.h"
 
@@ -78,14 +79,14 @@ int main(int argc, char **argv)
 		fprintf(stderr, "L1 interpreter is missing relevant symbols.\n");
 		exit(1);
 	}
-	if(sl2_elf->st_size < l2sz) {
+	if(te32toh(sl2_elf->st_size) < l2sz) {
 		fprintf(stderr, "insufficient space in L1 interpreter for L2 ELF\n");
 		exit(1);
 	}
 
 	/* TODO: should be mips_copyout if encryption is in place... */
-	memcpy(base + sl2_elf->st_value, l2elf, l2sz);
-	*(unsigned int*)(base + sl2_elf_size->st_value) = l2sz;
+	memcpy(base + te32toh(sl2_elf->st_value), l2elf, l2sz);
+	*(unsigned int*)(base + te32toh(sl2_elf_size->st_value)) = l2sz;
 
 	/* Execute stuff. */
 
