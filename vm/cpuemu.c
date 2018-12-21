@@ -502,7 +502,7 @@ mips_sbyte mips_peek_sb(MIPS_CPU *pcpu, mips_uword addr)
 	int s = addr & 3U;
 	validate_address(pcpu, addr, 0);
 	{
-		mips_uword w = pcpu->peek_uw(pcpu, addr-s);
+		mips_uword w = te32toh(pcpu->peek_uw(pcpu, addr-s));
 		return (mips_sbyte)(w >> (8*s));
 	}
 }
@@ -512,8 +512,8 @@ mips_shalf mips_peek_sh(MIPS_CPU *pcpu, mips_uword addr)
 	int s = addr & 3U;
 	validate_address(pcpu, addr, 1);
 	{
-		mips_uword w = pcpu->peek_uw(pcpu, addr-s);
-		return (mips_shalf)(w >> (8*s));
+		mips_uword w = te32toh(pcpu->peek_uw(pcpu, addr-s));
+		return (mips_shalf)htote16((mips_uhalf)(w >> (8*s)));
 	}
 }
 
@@ -522,7 +522,7 @@ mips_ubyte mips_peek_ub(MIPS_CPU *pcpu, mips_uword addr)
 	int s = addr & 3U;
 	validate_address(pcpu, addr, 0);
 	{
-		mips_uword w = pcpu->peek_uw(pcpu, addr-s);
+		mips_uword w = te32toh(pcpu->peek_uw(pcpu, addr-s));
 		return (mips_ubyte)(w >> (8*s));
 	}
 }
@@ -532,8 +532,8 @@ mips_uhalf mips_peek_uh(MIPS_CPU *pcpu, mips_uword addr)
 	int s = addr & 3U;
 	validate_address(pcpu, addr, 1);
 	{
-		mips_uword w = pcpu->peek_uw(pcpu, addr-s);
-		return (mips_uhalf)(w >> (8*s));
+		mips_uword w = te32toh(pcpu->peek_uw(pcpu, addr-s));
+		return htote16((mips_uhalf)(w >> (8*s)));
 	}
 }
 
@@ -549,7 +549,7 @@ void mips_poke_ub(MIPS_CPU *pcpu, mips_uword addr, mips_ubyte v)
 	int s = addr & 3U;
 	validate_address(pcpu, addr, 0);
 	{
-		mips_uword w = pcpu->peek_uw(pcpu, addr-s);
+		mips_uword w = te32toh(pcpu->peek_uw(pcpu, addr-s));
 		mips_uword m = ~(0xFFU << (8*s));
 		pcpu->poke_uw(pcpu, addr-s, (w & m) | ((mips_uword)v << (8*s)));
 	}
@@ -560,7 +560,7 @@ void mips_poke_uh(MIPS_CPU *pcpu, mips_uword addr, mips_uhalf v)
 	int s = addr & 3U;
 	validate_address(pcpu, addr, 1);
 	{
-		mips_uword w = pcpu->peek_uw(pcpu, addr-s);
+		mips_uword w = te32toh(pcpu->peek_uw(pcpu, addr-s));
 		mips_uword m = ~(0xFFFFU << (8*s));
 		pcpu->poke_uw(pcpu, addr-s, (w & m) | ((mips_uword)v << (8*s)));
 	}
