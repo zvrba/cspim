@@ -188,6 +188,12 @@ const char *mips_elf_get_symname(struct mips_cpu *pcpu, Elf32_Sym *sym)
 
 static int check_eh_limits(const Elf32_Ehdr *eh, size_t sz)
 {
+#if defined(MIPS_BE)
+	const unsigned char ElfDataType = ELFDATA2MSB;
+#else
+	const unsigned char ElfDataType = ELFDATA2LSB;
+#endif
+
 	if(te16toh(eh->e_ehsize) != sizeof(*eh))
 		return -1;
 
@@ -195,7 +201,7 @@ static int check_eh_limits(const Elf32_Ehdr *eh, size_t sz)
 			(eh->e_ident[2] != 'L') || (eh->e_ident[3] != 'F'))
 		return -1;
 	if((eh->e_ident[EI_CLASS] != ELFCLASS32) ||
-			(eh->e_ident[EI_DATA] != ELFDATA2LSB))
+			(eh->e_ident[EI_DATA] != ElfDataType))
 		return -1;
 	if((te16toh(eh->e_type) != ET_EXEC) ||(te16toh(eh->e_machine) != EM_MIPS))
 		return -1;
