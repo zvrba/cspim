@@ -543,15 +543,19 @@ mips_uword mips_peek_uw(MIPS_CPU *pcpu, mips_uword addr)
 	return pcpu->peek_uw(pcpu, addr);
 }
 
-// TODO: will these byte to word transformations work even with byte swapping? We want the byte to always land in the same place within the word
 void mips_poke_ub(MIPS_CPU *pcpu, mips_uword addr, mips_ubyte v)
 {
 	int s = addr & 3U;
 	validate_address(pcpu, addr, 0);
 	{
+		// 'peek_uw' will swap word if host != target endian. Swap again here
+		// to get the original memory order.
 		mips_uword w = te32toh(pcpu->peek_uw(pcpu, addr-s));
 		mips_uword m = ~(0xFFU << (8*s));
-		pcpu->poke_uw(pcpu, addr-s, (w & m) | ((mips_uword)v << (8*s)));
+
+		// Swap again when writing since poke_uw takes memory in host endian (and will swap on write).
+		// Modern compilers can probably detect and remove the redundant swaps.
+		pcpu->poke_uw(pcpu, addr-s, te32toh((w & m) | ((mips_uword)v << (8*s))));
 	}
 }
 
@@ -560,9 +564,14 @@ void mips_poke_uh(MIPS_CPU *pcpu, mips_uword addr, mips_uhalf v)
 	int s = addr & 3U;
 	validate_address(pcpu, addr, 1);
 	{
+		// 'peek_uw' will swap word if host != target endian. Swap again here
+		// to get the original memory order.
 		mips_uword w = te32toh(pcpu->peek_uw(pcpu, addr-s));
 		mips_uword m = ~(0xFFFFU << (8*s));
-		pcpu->poke_uw(pcpu, addr-s, (w & m) | ((mips_uword)v << (8*s)));
+
+		// Swap again when writing since poke_uw takes memory in host endian (and will swap on write).
+		// Modern compilers can probably detect and remove the redundant swaps.
+		pcpu->poke_uw(pcpu, addr-s, te32toh((w & m) | ((mips_uword)v << (8*s))));
 	}
 }
 
