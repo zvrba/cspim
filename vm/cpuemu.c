@@ -502,6 +502,8 @@ mips_sbyte mips_peek_sb(MIPS_CPU *pcpu, mips_uword addr)
 	int s = addr & 3U;
 	validate_address(pcpu, addr, 0);
 	{
+		// 'peek_uw' will swap word if host != target endian. Swap again here
+		// to get the original memory order.
 		mips_uword w = te32toh(pcpu->peek_uw(pcpu, addr-s));
 		return (mips_sbyte)(w >> (8*s));
 	}
@@ -512,7 +514,11 @@ mips_shalf mips_peek_sh(MIPS_CPU *pcpu, mips_uword addr)
 	int s = addr & 3U;
 	validate_address(pcpu, addr, 1);
 	{
+		// 'peek_uw' will swap word if host != target endian. Swap again here
+		// to get the original memory order.
 		mips_uword w = te32toh(pcpu->peek_uw(pcpu, addr-s));
+
+		// Swap half into order expected by target
 		return (mips_shalf)htote16((mips_uhalf)(w >> (8*s)));
 	}
 }
@@ -522,6 +528,8 @@ mips_ubyte mips_peek_ub(MIPS_CPU *pcpu, mips_uword addr)
 	int s = addr & 3U;
 	validate_address(pcpu, addr, 0);
 	{
+		// 'peek_uw' will swap word if host != target endian. Swap again here
+		// to get the original memory order.
 		mips_uword w = te32toh(pcpu->peek_uw(pcpu, addr-s));
 		return (mips_ubyte)(w >> (8*s));
 	}
@@ -532,7 +540,11 @@ mips_uhalf mips_peek_uh(MIPS_CPU *pcpu, mips_uword addr)
 	int s = addr & 3U;
 	validate_address(pcpu, addr, 1);
 	{
+		// 'peek_uw' will swap word if host != target endian. Swap again here
+		// to get the original memory order.
 		mips_uword w = te32toh(pcpu->peek_uw(pcpu, addr-s));
+
+		// Swap half into order expected by target
 		return htote16((mips_uhalf)(w >> (8*s)));
 	}
 }
