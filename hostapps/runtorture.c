@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cpu.h"
+#include "mips_endian.h"
 #include "util.h"
 
 #define MEMSZ (2U << 20)
@@ -81,7 +82,7 @@ static void execute(struct mips_cpu *pcpu)
 
 		/* Print all labels as they are encountered. */
 		if((sym = mips_elf_find_address(pcpu, pcpu->pc)) && 
-		   (sym->st_value == pcpu->pc) &&
+		   (te32toh(sym->st_value) == pcpu->pc) &&
 		   (symname = mips_elf_get_symname(pcpu, sym))) {
 			printaddr(pcpu, "PC=", pcpu->pc);
 			printaddr(pcpu, ",last_branch=", last_branch);
@@ -93,7 +94,7 @@ static void execute(struct mips_cpu *pcpu)
 		
 		/* Tolerated exceptions must exactly match PC. */
 		if((sym = mips_elf_find_address(pcpu, pcpu->pc)) && 
-		   (sym->st_value == pcpu->pc) &&
+		   (te32toh(sym->st_value) == pcpu->pc) &&
 		   (symname = mips_elf_get_symname(pcpu, sym)) &&
 		   (strncmp(symname, "EXN", 3) == 0)) {
 			/* Must fix up PC to skip over break that would be triggered had
