@@ -392,39 +392,84 @@ static void do_loadstore(int insn, int opcode, MIPS_CPU *pcpu)
 	/* The code for LWL/LWR/SWL/SWR takes care to not make shifts larger
 	 * than 31 bits (shifts larger or equal to word width are undefined
 	 * behavior in C ).  This implementation is little-endian! */
-		
+#if defined(MIPS_BE)
 	case MIPS_I_LWL: {
 		int s = ea & 3;
-		mips_uword utmp1 = uMEMW(ea - s) << 8*(3-s);
-		mips_uword utmp2 = s != 3 ? uRT & (0xFFFFFFFFU >> 8*(s+1)) : 0;
-		uW(RT, utmp1 | utmp2);
+		mips_uword mask = s != 0 ? ~(0xFFFFFFFFU >> (8 * (4 - s))) : 0xFFFFFFFFU;
+		mips_uword mem = pcpu->peek_uw(pcpu, ea) & mask;
+		mips_uword reg = uRT & ~mask;
+
+		uW(RT, mem | reg);
 		break;
 	}
-		
+
 	case MIPS_I_LWR: {
 		int s = ea & 3;
-		mips_uword utmp1 = uMEMW(ea - s) >> 8*s;
-		mips_uword utmp2 = s != 0 ? uRT & (0xFFFFFFFFU << 8*(4-s)) : 0;
-		uW(RT, utmp1 | utmp2);
+		mips_uword mask = s != 3 ? ~(0xFFFFFFFFU << (8 * (s + 1))) : 0xFFFFFFFFU;
+		mips_uword mem = pcpu->peek_uw(pcpu, ea - 3) & mask;
+		mips_uword reg = uRT & ~mask;
+
+		uW(RT, mem | reg);
 		break;
 	}
-		
+
 	case MIPS_I_SWL: {
 		int s = ea & 3;
-		mips_uword utmp1 = s != 3 ? uMEMW(ea - s) & (0xFFFFFFFFU << 8*(s+1)) : 0;
-		mips_uword utmp2 = uRT >> 8*(3-s);
-		mips_poke_uw(pcpu, ea-s, utmp1 | utmp2);
+		mips_uword mask = s != 0 ? ~(0xFFFFFFFFU >> (8 * (4 - s))) : 0xFFFFFFFFU;
+		mips_uword mem = pcpu->peek_uw(pcpu, ea) & ~mask;
+		mips_uword reg = uRT & mask;
+		pcpu->poke_uw(pcpu, ea, reg | mem);
 		break;
 	}
-		
+
 	case MIPS_I_SWR: {
 		int s = ea & 3;
-		mips_uword utmp1 = s != 0 ? uMEMW(ea - s) & (0xFFFFFFFFU >> 8*(4-s)) : 0;
-		mips_uword utmp2 = uRT << 8*s;
-		mips_poke_uw(pcpu, ea-s, utmp1 | utmp2);
+		mips_uword mask = s != 3 ? ~(0xFFFFFFFFU << (8 * (s + 1))) : 0xFFFFFFFFU;
+		mips_uword mem = pcpu->peek_uw(pcpu, ea - 3) & ~mask;
+		mips_uword reg = uRT & mask;
+		pcpu->poke_uw(pcpu, ea - 3, reg | mem);
 		break;
 	}
-		
+#else
+	case MIPS_I_LWL: {
+		int s = ea & 3;
+		mips_uword mask = s != 3 ? ~(0xFFFFFFFFU >> (8 * (s + 1))) : 0xFFFFFFFFU;
+		mips_uword mem = pcpu->peek_uw(pcpu, ea - 3) & mask;
+		mips_uword reg = uRT & ~mask;
+
+		uW(RT, mem | reg);
+		break;
+	}
+
+	case MIPS_I_LWR: {
+		int s = ea & 3;
+		mips_uword mask = s != 0 ? ~(0xFFFFFFFFU << (8 * (4 - s))) : 0xFFFFFFFFU;
+		mips_uword mem = pcpu->peek_uw(pcpu, ea) & mask;
+		mips_uword reg = uRT & ~mask;
+
+		uW(RT, mem | reg);
+		break;
+	}
+
+	case MIPS_I_SWL: {
+		int s = ea & 3;
+		mips_uword mask = s != 3 ? ~(0xFFFFFFFFU >> (8 * (s + 1))) : 0xFFFFFFFFU;
+		mips_uword mem = pcpu->peek_uw(pcpu, ea - 3) & ~mask;
+		mips_uword reg = uRT & mask;
+		pcpu->poke_uw(pcpu, ea - 3, reg | mem);
+		break;
+	}
+
+	case MIPS_I_SWR: {
+		int s = ea & 3;
+		mips_uword mask = s != 0 ? ~(0xFFFFFFFFU << (8 * (4 - s))) : 0xFFFFFFFFU;
+		mips_uword mem = pcpu->peek_uw(pcpu, ea) & ~mask;
+		mips_uword reg = uRT & mask;
+		pcpu->poke_uw(pcpu, ea, reg | mem);
+		break;
+	}
+#endif
+
 	default:
 		THROW(pcpu, MIPS_E_ABORT);
 	}
