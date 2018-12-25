@@ -121,10 +121,10 @@ t_alu3_$1_`'UID`':
 
 		.globl _start
 _start:
-include(arith.sm4)			# arithmetic operations + m{f,t}{hi,lo}
-include(logic.sm4)			# bit operations and comparisons
-include(loadstore.sm4)		# load/store tests
-include(branch.sm4)			# branch tests
+include(../arith.sm4)			# arithmetic operations + m{f,t}{hi,lo}
+include(../logic.sm4)			# bit operations and comparisons
+include(loadstore.sm4)		    # load/store tests  (loaded from current dir since it's endian-specific)
+include(../branch.sm4)			# branch tests
 		.globl	SUCCESS
 SUCCESS:
 		break 0				# mark successful completion
