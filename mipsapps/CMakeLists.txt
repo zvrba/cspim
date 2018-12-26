@@ -1,9 +1,10 @@
-project(MIPS_APPS)
+set(CMAKE_SYSTEM_NAME "Generic")
+set(CMAKE_C_COMPILER mips-elf-gcc)
+
+project(MIPS_APPS LANGUAGES C)
 
 # MIPS xcompiler mipsel-elf-gcc not available on most systems
 if (NOT SKIP_APPS)
-	set(CMAKE_SYSTEM_NAME "Generic")
-	set(CMAKE_C_COMPILER mipsel-elf-gcc)
 	add_definitions(-Wall -O3 -mips1 -mno-check-zero-division -mlong-calls)
 	set(CMAKE_EXE_LINKER_FLAGS "-Wl,-q -nostdlib -Ttext 0x1000")
 	set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)
