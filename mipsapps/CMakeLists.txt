@@ -1,9 +1,18 @@
 set(CMAKE_SYSTEM_NAME "Generic")
-set(CMAKE_C_COMPILER mips-elf-gcc)
 
+# MIPS xcompiler mipsel-elf-gcc not available on most systems.
+# Unspecified/default is not to skip, so explicit builds in this folder will always build apps. 
+if (NOT SKIP_APPS)
+	if (MIPS_BE)
+		set(CMAKE_C_COMPILER mips-elf-gcc)
+	else()
+		set(CMAKE_C_COMPILER mipsel-elf-gcc)
+	endif(MIPS_BE)
+endif (NOT SKIP_APPS)
+
+# Even if unavailable, still add mips apps source dir for other projects.
 project(MIPS_APPS LANGUAGES C)
 
-# MIPS xcompiler mipsel-elf-gcc not available on most systems
 if (NOT SKIP_APPS)
 	add_definitions(-Wall -O3 -mips1 -mno-check-zero-division -mlong-calls)
 	set(CMAKE_EXE_LINKER_FLAGS "-Wl,-q -nostdlib -Ttext 0x1000")
@@ -32,9 +41,10 @@ if (NOT SKIP_APPS)
 	add_executable(mmult-bench mmult-bench.c spim.c)
 	add_executable(hanoi-bench hanoi-bench.c spim.c)
 
-	if(NOT HOSTED)
+	# Unspecified assumes hosted, so this is only built in parent project build or if requested explicitly (cmake arg).
+	if(VIRTUALIZED)
 		include_directories(${MIPS_SOURCE_DIR}/vm ${MIPS_SOURCE_DIR}/vm/cspim)
 		add_executable(run-lvl1 run-lvl1.c spim.c)
 		target_link_libraries(run-lvl1 mipsvm)
-	endif(NOT HOSTED)
+	endif(VIRTUALIZED)
 endif(NOT SKIP_APPS)
