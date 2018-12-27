@@ -9,7 +9,11 @@ ADD_EXECUTABLE(elfcrypt elfcrypt.c util.c rc5-16.c)
 ADD_EXECUTABLE(load-lvl1 load-lvl1.c util.c rc5-16.c)
 
 # Benchmarking stuff
-# ADD_EXECUTABLE(sstep sstep.c)
+if (NOT SKIP_SSTEP)
+    LINK_LIBRARIES(mipsvm rt)
+    ADD_EXECUTABLE(sstep sstep.c)
+endif(NOT SKIP_SSTEP)
+
 ADD_EXECUTABLE(hanoi-bench-native ${MIPS_APPS_SOURCE_DIR}/hanoi-bench.c)
 ADD_EXECUTABLE(mmult-bench-native ${MIPS_APPS_SOURCE_DIR}/mmult-bench.c)
 SET_TARGET_PROPERTIES(hanoi-bench-native mmult-bench-native
