@@ -69,13 +69,13 @@ The interpreter is built by executing
     cmake .
     make
 
-This will build host applicactions in `hostapps`. By default, MIPS applications in
+This will build host applications in `hostapps`. By default, MIPS applications in
 `mipsapps` are not built, since they require a cross compiler. Directories `bmips-le` and `bmips-be`
 contain pre-built binaries of the sources in `mipsapps`.
 
 To build them for yourself, specify `-DSKIP_APPS=OFF` when invoking `cmake`.
 
-###CMake options
+### CMake options
 ```
 MIPS_BE     Build all for big endian MIPS target.
 SKIP_APPS   Skip building mips apps in mipsapps. Use this when you don't have a cross compiler.
