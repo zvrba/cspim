@@ -27,9 +27,8 @@
  */
 /**
  * @file
- * MIPS I execution engine.  ONLY little-endian functionality is implemented.
- * This in general means that the host execution engine has to have the same
- * endianness as the simulated CPU!
+ * MIPS I execution engine.  Supports both little and big endian functionality, though
+ * has not yet been tested on a big endian host.
  *
  * @todo change documentation with regard to jump instruction exceptions!
  */
@@ -391,7 +390,7 @@ static void do_loadstore(int insn, int opcode, MIPS_CPU *pcpu)
 
 	/* The code for LWL/LWR/SWL/SWR takes care to not make shifts larger
 	 * than 31 bits (shifts larger or equal to word width are undefined
-	 * behavior in C ).  This implementation is little-endian! */
+	 * behavior in C ). */
 #if defined(MIPS_BE)
 	case MIPS_I_LWL: {
 		int s = ea & 3;

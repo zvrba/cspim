@@ -2162,7 +2162,7 @@ t_alu3_sltu_118:
 #  ===========================================================================
 #
 # Included as part of cputorture.sm4.  Tests load/store instructions for
-# little-endian mode.
+# big-endian mode.
 #
 
 t_lui:

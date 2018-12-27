@@ -62,20 +62,18 @@ typedef mips_uword (*mips_peek_uw_f)(MIPS_CPU*, mips_uword);
 
 /**
  * Default peek function which performs no transformations.
- * @note Currently works only for little-endian hosts!
  */
 mips_uword mips_identity_peek_uw(MIPS_CPU *pcpu, mips_uword addr);
 
 /**
  * Type of function which pokes a word at the given address (an offset from
- * pcpu->base).  Same precautions apply as for the peek function.
+ * pcpu->base).
  * @see mips_peek_uw_f
  */
 typedef void (*mips_poke_uw_f)(MIPS_CPU*, mips_uword, mips_uword);
 
 /**
  * Default poke function which performs no transformations.
- * @note Currently works only for little-endian hosts!
  */
 void mips_identity_poke_uw(MIPS_CPU *pcpu, mips_uword addr, mips_uword val);
 

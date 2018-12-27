@@ -1,29 +1,20 @@
 <p>[This is Markdown format; README.html is auto-generated from this file.]</p>
-
-<h1>The CSPIM MIPS simulator</h1>
-
+<h3>The CSPIM MIPS simulator</h3>
 <p>More details about this project can be found
 <a href="http://zvrba.net/software/cspim.html">here.</a> Detailed description of CSPIM
 internals as well as the motivation and possible use cases can be found in the
 following publication:</p>
-
 <p>Vrba, Z.; Halvorsen, P.; Griwodz, C., "Program obfuscation by strong
 cryptography" The International Dependability Conference, 2010. ARES
 '10. International Conference on, 15-18 February, 2010.
 <a href="http://dx.doi.org/10.1109/ARES.2010.47">DOI:10.1109/ARES.2010.47</a></p>
-
 <p>Copies of the paper are available on explicit request by email.</p>
-
-<h1>COPYRIGHT NOTICE</h1>
-
+<h3>COPYRIGHT NOTICE</h3>
 <p>All files in this distribution, unless otherwise explicitly noted, are</p>
-
 <ul>
 <li>(c) 2008-2012 Zeljko Vrba <a href="&#109;&#97;&#x69;&#108;t&#x6F;:z&#x76;&#x72;&#98;&#97;&#x2E;&#x65;&#120;&#116;&#101;&#114;n&#97;&#x6C;&#64;z&#x76;&#114;&#x62;&#97;&#46;&#x6E;&#101;&#x74;">z&#x76;&#x72;&#98;&#97;&#x2E;&#x65;&#120;&#116;&#101;&#114;n&#97;&#x6C;&#64;z&#x76;&#114;&#x62;&#97;&#46;&#x6E;&#101;&#x74;</a></li>
 </ul>
-
 <p>and are distributed under the following license:</p>
-
 <blockquote>
   <p>Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to
@@ -31,10 +22,8 @@ cryptography" The International Dependability Conference, 2010. ARES
    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
    sell copies of the Software, and to permit persons to whom the Software is
    furnished to do so, subject to the following conditions:</p>
-  
   <p>The above copyright notice and this permission notice shall be included in
    all copies or substantial portions of the Software.</p>
-  
   <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -43,75 +32,61 @@ cryptography" The International Dependability Conference, 2010. ARES
    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
    IN THE SOFTWARE.</p>
 </blockquote>
-
-<h1>Project structure</h1>
-
+<h3>Project structure</h3>
 <p>The top-level directory contains the following subdirectories:</p>
-
 <ul>
-<li>bmips:      precompiled programs for MIPS I; directly runnable by CSPIM</li>
+<li>bmips-le:   precompiled programs for little-endian MIPS I; directly runnable by CSPIM</li>
+<li>bmips-be:   precompiled programs for big-endian MIPS I; directly runnable by CSPIM</li>
 <li>hostapps:   host utilities [the interpreter itself]</li>
-<li>mipsapps:   source fof programs runnable by CSPIM; precompiled in <code>bmips</code></li>
+<li>mipsapps:   source fof programs runnable by CSPIM; precompiled in both <code>bmips-le</code> and <code>bmips-be</code></li>
 <li>vm:         core simulator: MIPS instruction set and ELF loader</li>
 </ul>
-
-<h1>How to build</h1>
-
+<h3>How to build</h3>
 <p>This package has been developed and tested with Solaris cc, gcc and Visual
-Studio 2008.  Prerequisites for building:</p>
-
+Studio 2008, and macOS (excluding cross-compilation of mipsapps).  Prerequisites for building:</p>
 <ul>
-<li>Working native compiler.  Solaris cc, gcc and Visual Studio 2008 have been
+<li>Working native compiler.  Solaris cc, gcc, and Visual Studio 2008 have been
 tested.</li>
-<li>Working cross-compiler which can generate little-endian MIPS I ELF
-executables.  gcc 4.2.4 and binutils 2.22 have been tested.</li>
+<li>Working cross-compiler which can generate little-endian or big-endian MIPS I
+ELF executables (for MIPS apps).  gcc 4.2.4 and binutils 2.22 have been tested.</li>
 <li><a href="http://www.cmake.org">CMake</a></li>
 </ul>
-
 <p>The interpreter is built by executing</p>
-
 <pre><code>cmake .
-make
-</code></pre>
-
-<p>This will build host applicactions in <code>hostapps</code> and MIPS applications in
-<code>mipsapps</code>. (Files in <code>bmips</code> directory are for reference only and are not
-overwritten.)</p>
-
-<h2>Host applications</h2>
-
+make</code></pre>
+<p>This will build host applicactions in <code>hostapps</code>. By default, MIPS applications in
+<code>mipsapps</code> are not built, since they require a cross compiler. Directories <code>bmips-le</code> and <code>bmips-be</code>
+contain pre-built binaries of the sources in <code>mipsapps</code>.</p>
+<p>To build them for yourself, specify <code>-DSKIP_APPS=OFF</code> when invoking <code>cmake</code>.</p>
+<h5>CMake options</h5>
+<pre><code>MIPS_BE     Build all for big endian MIPS target.
+SKIP_APPS   Skip building mips apps in mipsapps. Use this when you don't have a cross compiler.
+VIRTUALIZED Build for use with load/run lvl1. Doesn't yet support big endian (MIPS_BE will be error).
+SKIP_SSTEP  Skip building sstep, which uses POSIX librt. Use this on macOS.</code></pre>
+<h4>Host applications</h4>
 <p>The following applications are built in <code>hostapps</code>:</p>
-
 <ul>
 <li><code>runtorture</code>: use to run the MIPS torture test</li>
-<li><code>run</code>:        use to run (possibly encrypted) MIPS executables</li>
+<li><code>run</code>:          use to run (possibly encrypted) MIPS executables</li>
 <li><code>runbench</code>:   use to run the MIPS benchmarks</li>
 <li><code>elfcrpyt</code>:   use to encrypt MIPS ELF executables</li>
 </ul>
-
 <p><code>sstep</code>, <code>hanoi-bench-native</code>, <code>mmult-bench-native</code> are benchmarking
 applications; see the above paper for details.  The "run" programs
 take as parameter a MIPS ELF executable; an example invocation is
     ./hostapps/run ./mipsapps/hanoi
 <code>runtorture</code> should only be used to run the <code>cputorture</code> program.</p>
-
-<h2>MIPS CPU torture test</h2>
-
+<h4>MIPS CPU torture test</h4>
 <p>Torture test assembly source is generated by preprocessing the <code>*.sm4</code> files
 with M4:</p>
-
-<pre><code>m4 cputorture.sm4 &gt; cputorture.s
-</code></pre>
-
+<pre><code>m4 cputorture.sm4 &gt; cputorture.s</code></pre>
+<p>Endian-specific versions of loadstore.sm4 exist to support building cputorture.s
+for both CPU variants.</p>
 <p>The pregenerated source is already provided in the distribution.  The test
 is run by executing</p>
-
-<pre><code>./hostapps/runtorture ./mipsapps/cputorture
-</code></pre>
-
+<pre><code>./hostapps/runtorture ./mipsapps/cputorture</code></pre>
 <p>If the test is successfully passed, the last lines of the output will be
 something like (note the <code>(near SUCCESS)</code> in the last line):</p>
-
 <pre><code>finished: exception=5, code=0x0, last_branch=0x2e74(near t_link)
 ***MIPS@0xb7c6b008***
 BASE=200000@0xb7c6b008 BRK=00003fd0 STKSZ=00004000
@@ -125,70 +100,57 @@ R24=90000000 R25=f0000000 R26=00003fc0 R27=00003fc4
 R28=00003fc0 R29=00003fc4 R30=00003fc8 R31=00002fa0
 HI =12345678 LO =9abcdef0
 PC =00002fb0 DS =00000000
-(near SUCCESS)
-</code></pre>
-
+(near SUCCESS)</code></pre>
 <p>If the execution stops at a label name other than <code>SUCCESS</code> in the last line,
 something has gone wrong and the preceding output can be determined to find
 out what.</p>
-
-<h2>MIPS applications</h2>
-
+<h4>MIPS applications</h4>
 <p>Many of the other example problems are are solved assignments (in C) from
 Appendix of the third edition of Hennessy &amp; Patterson, Computer Organization
 and Design: The Hardware/Software Interface; available at.  This appendix is
 also available online <a href="http://pages.cs.wisc.edu/~larus/HP_AppA.pdf">here.</a>
 These programs should be executed with <code>./hostapps/run program</code>.</p>
-
-<h2>Encrypted execution</h2>
-
+<p>As expected, mipsapps built for big endian will only work with hostapps built
+to run big endian executables (<code>-DMIPS_BE</code>).</p>
+<h4>Encrypted execution</h4>
 <p>All LOAD ELF segments of executables can be encrypted with RC-5 encryption
 algorithm using 32-bit block size and 128-bit key.  The encryption uses ECB
 mode, which should <em>not be used for anything but simple demos</em>!  Example
 session:</p>
-
 <pre><code>./hostapps/elfcrypt mipsapps/hanoi /tmp/hanoi-crypt 0123456789ABCDEF0123456789ABCDEF
-./hostapps/run /tmp/hanoi-crypt 0123456789ABCDEF0123456789ABCDEF
-</code></pre>
-
+./hostapps/run /tmp/hanoi-crypt 0123456789ABCDEF0123456789ABCDEF</code></pre>
 <p>Failing to provide the key in the last command will terminate execution with
 exception 3 (invalid instruction).</p>
-
-<h2>Self-simulation</h2>
-
-<p>Compile both HOSTED and non-HOSTED build (configure this by using <code>ccmake</code>).
+<p>Big endian MIPS is currently unsupported in this mode.</p>
+<h4>Self-simulation</h4>
+<p>Compile both hosted and VIRTUALIZED build (configure this by using <code>ccmake</code>).
 This must be done in two separate build directories; note that cmake supports
 builds in directories other than the source directory (so-called
 "out-of-source build").  This builds an extra executable,
 <code>./mipsapps/run-lvl1</code>, which should be run with <code>./hostapps/load-lvl1</code>.
 <code>./run-lvl1</code> can currently only run cputorture, since the nested simulation
 does not yet forward system calls to the outer simulation.</p>
-
 <p>NOTE: You need to remove all files previously generated by CMake for
 out-of-source build to work.</p>
-
 <p>Suppose that the hosted interpreter has been built in the <code>./HH</code> directory,
 and the non-hosted in the <code>./NH</code> directory.  Then the CPU torture test can
 be run in the nested simulation with the following command:</p>
-
-<pre><code>./HH/hostapps/load-lvl1 ./NH/mipsapps/run-lvl1 ./NH/mipsapps/cputorture 
-</code></pre>
-
-<h2>Building cross-gcc</h2>
-
+<pre><code>./HH/hostapps/load-lvl1 ./NH/mipsapps/run-lvl1 ./NH/mipsapps/cputorture </code></pre>
+<p>Big endian MIPS is currently unsupported.</p>
+<h4>Building cross-gcc</h4>
 <p>Note that gcc 4.2.x is the highest gcc version that doesn't require GMP, MPFR
 and MPC libraries, which significantly eases installation.</p>
-
+<p>For a big-endian cross compiler, replace <code>mipsel-elf</code> with <code>mips-elf</code> below.</p>
+<p>Note: building gcc 4.2.x with a modern version of gcc is tough. It helps to set
+languages to C only, and to disable Werror when parameterizing GNU's <code>configure</code>
+script.</p>
 <ol>
 <li><p>Download and build binutils (tested with version 2.22).
 Configure and build as:</p>
-
 <p><code>./configure --prefix=$HOME --disable-debug --disable-nls --target=mipsel-elf</code>
 <code>make install</code></p></li>
 <li><p>Download and build gcc; it MUST NOT be built in the source dir (hence ../).
 Make sure that the installed binutils (mipsel-elf-as etc.) are in PATH.</p>
-
 <p><code>../gcc-4.2.4/configure --prefix=$HOME --disable-debug --disable-nls --target=mipsel-elf --disable-bootstrap --disable-libssp</code></p>
-
 <p><code>make install</code></p></li>
 </ol>
