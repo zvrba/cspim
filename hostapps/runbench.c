@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cpu.h"
+#include "mips_endian.h"
 #include "rc5-16.h"
 #include "util.h"
 
@@ -47,7 +48,7 @@
 static void parse_params(struct mips_cpu *pcpu, Elf32_Sym *params, char *argv)
 {
 	/* The magic constant 4 is sizeof(unsigned) on MIPS I. */
-	unsigned addr = params->st_value, n = params->st_size / 4;
+	unsigned addr = te32toh(params->st_value), n = te32toh(params->st_size) / 4;
 	unsigned i;
 	char *tok = strtok(argv, ",");
 	
@@ -90,21 +91,21 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if((s_params->st_size % 4) || !s_params->st_size) {
-		fprintf(stderr, "ERROR: 'PARAMS' has invalid size %u\n", s_params->st_size);
+	if((te32toh(s_params->st_size) % 4) || !te32toh(s_params->st_size)) {
+		fprintf(stderr, "ERROR: 'PARAMS' has invalid size %u\n", te32toh(s_params->st_size));
 		exit(1);
 	}
 
-	if(s_time->st_size != 8) {
-		fprintf(stderr, "ERROR: 'TIME' has size %u != 8\n", s_time->st_size);
+	if(te32toh(s_time->st_size) != 8) {
+		fprintf(stderr, "ERROR: 'TIME' has size %u != 8\n", te32toh(s_time->st_size));
 		exit(1);
 	}
 
 	parse_params(pcpu, s_params, params);
 	execute_loop(pcpu);
 
-	TIME = mips_peek_uw(pcpu, s_time->st_value+4); /* high word */
-	TIME = (TIME << 32) | mips_peek_uw(pcpu, s_time->st_value); /* low word */
+	TIME = mips_peek_uw(pcpu, te32toh(s_time->st_value) + 4); /* high word */
+	TIME = (TIME << 32) | mips_peek_uw(pcpu, te32toh(s_time->st_value)); /* low word */
 	printf("%llu\n", TIME);
 
     return 0;
